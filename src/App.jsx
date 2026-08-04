@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, createContext, useContext } from "react";
 import {
   FlameIcon, BookIcon, NoteIcon, ChevronRight, ArrowRight, ArrowLeft,
   CheckCircle, CircleOutline, XCircle, LightbulbIcon, SpeakerIcon,
@@ -11,6 +11,27 @@ import {
   COVERAGE, defaultSessionState, STORAGE_KEY,
 } from "./lessonData.js";
 import { VN, KR, ID, RU, US, CA, TH, FR, CN, JP, MY, DE } from "country-flag-icons/react/3x2";
+
+// ---------------------------------------------------------------------
+// language toggle (KR / VT) — default Korean, switches all bilingual text
+// ---------------------------------------------------------------------
+const LangContext = createContext({ lang: "ko", setLang: () => {} });
+function useLang() {
+  return useContext(LangContext);
+}
+function pick(lang, ko, vi) {
+  return lang === "vi" ? (vi ?? ko) : ko;
+}
+
+function LangToggle() {
+  const { lang, setLang } = useLang();
+  return (
+    <div className="lang-toggle" role="tablist" aria-label="언어 선택">
+      <button type="button" role="tab" aria-selected={lang === "ko"} onClick={() => setLang("ko")}>KR</button>
+      <button type="button" role="tab" aria-selected={lang === "vi"} onClick={() => setLang("vi")}>VT</button>
+    </div>
+  );
+}
 
 // ---------------------------------------------------------------------
 // persistence
@@ -28,6 +49,7 @@ function loadState() {
 
 export default function App() {
   const [state, setState] = useState(loadState);
+  const [lang, setLang] = useState("ko");
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -48,6 +70,7 @@ export default function App() {
   const completedCount = Object.values(state.sessions).filter((sess) => sess.completed).length;
 
   return (
+    <LangContext.Provider value={{ lang, setLang }}>
     <div className="app-backdrop">
       <div className="desktop-layout">
         <DesktopRail state={state} setView={setView} completedCount={completedCount} />
@@ -63,6 +86,7 @@ export default function App() {
         </div>
       </div>
     </div>
+    </LangContext.Provider>
   );
 }
 
@@ -351,6 +375,7 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
         <CertificateIcon size={24} className="header-mark" />
       </header>
       <div className="learning-progress-wrap">
+        <div className="lang-toggle-row"><LangToggle /></div>
         <div className="stage-bars" aria-label={`${stageIndex + 1}/${STAGE_ORDER.length}단계`}>
           {STAGE_ORDER.map((_, i) => <span key={i} className={i <= stageIndex ? "active" : ""} />)}
         </div>
@@ -401,11 +426,11 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
 // ---------------------------------------------------------------------
 function MissionStage() {
   const m = SESSION1.mission;
+  const { lang } = useLang();
   return (
     <div className="stage-section mission-stage">
       <div className="stage-kicker"><InfoCircleIcon size={18} /> 학습 목표</div>
-      <h2>{m.ko}</h2>
-      <p className="vi-copy large">{m.vi}</p>
+      <h2>{pick(lang, m.ko, m.vi)}</h2>
       <div className="mission-image"><img alt="오늘 학습 상황" src={LESSON.heroImage} /></div>
       <div className="mission-meta"><span>{m.pages}</span><strong>{m.artifact}</strong></div>
       <div className="six-skill-note">
@@ -488,6 +513,7 @@ function PronunciationModal({ words, index, onClose, onNext }) {
   const next = () => { if (index + 1 < words.length) onNext(index + 1); else onClose(); };
   const prev = () => { if (index > 0) onNext(index - 1); else onClose(); };
   const pct = Math.round(((index + 1) / words.length) * 100);
+  const { lang } = useLang();
 
   return (
     <div className="pron-overlay" role="dialog" aria-modal="true" aria-label="발음 평가">
@@ -502,7 +528,7 @@ function PronunciationModal({ words, index, onClose, onNext }) {
         <button type="button" className="pron-speak" aria-label={`${word.ko} 듣기`} onClick={() => speakKo(word.ko)}>
           <SpeakerIcon size={20} />
         </button>
-        <div><strong>{word.ko}</strong><span>{word.vi}</span></div>
+        <div><strong>{word.ko}</strong>{lang === "vi" && <span>{word.vi}</span>}</div>
       </div>
       {phase === "record" ? (
         <div className="pron-record-area">
@@ -530,22 +556,16 @@ function PronunciationModal({ words, index, onClose, onNext }) {
 
 function ContextStage() {
   const c = SESSION1.context;
-  const [tab, setTab] = useState("all");
   const [pronIndex, setPronIndex] = useState(null);
+  const { lang } = useLang();
   return (
     <div className="stage-section context-stage">
       <h2>나라와 국적 어휘</h2>
       <p className="stage-lead">{c.quizPrompt}</p>
-      <div className="wordbook-tabs" role="tablist" aria-label="단어장 보기 방식">
-        <button type="button" role="tab" aria-selected={tab === "all"} onClick={() => setTab("all")}>전체 보기</button>
-        <button type="button" role="tab" aria-selected={tab === "vi"} onClick={() => setTab("vi")}>베트남어 보기</button>
-        <button type="button" role="tab" aria-selected={tab === "ko"} onClick={() => setTab("ko")}>한국어 보기</button>
-      </div>
       <div className="wordbook-list">
         {c.words.map((w, idx) => (
           <div className="wordbook-row" key={w.ko} role="button" tabIndex={0} onClick={() => setPronIndex(idx)}>
-            {tab !== "vi" && <span className="wordbook-ko">{w.ko}</span>}
-            {tab !== "ko" && <span className="wordbook-vi">{w.vi}</span>}
+            {lang === "ko" ? <span className="wordbook-ko">{w.ko}</span> : <span className="wordbook-vi">{w.vi}</span>}
             <button type="button" className="wordbook-speak" aria-label={`${w.ko} 듣기`} onClick={(e) => { e.stopPropagation(); speakKo(w.ko); }}>
               <SpeakerIcon size={16} />
             </button>
@@ -785,6 +805,7 @@ function SentenceBuilder({ prefilled, targetTokens, poolExtra, onDone, onWrong }
 // grammar sentence quiz — 7-step exercise sequence ("문제 풀기")
 // ---------------------------------------------------------------------
 function GrammarSentenceQuiz({ data, onAllDone, onExit }) {
+  const { lang } = useLang();
   const STEPS = ["blank", "word", "char", "translate", "listenWord", "listenChar", "listenType"];
   const PROMPTS = {
     blank: "빈칸에 들어갈 말을 선택하세요",
@@ -894,7 +915,7 @@ function GrammarSentenceQuiz({ data, onAllDone, onExit }) {
 
       {kind === "word" && (
         <>
-          <p className="vi-copy sentence-vi">{data.target.vi}</p>
+          {lang === "vi" && <p className="vi-copy sentence-vi">{data.target.vi}</p>}
           <SentenceBuilder prefilled={data.target.prefilledWord} targetTokens={data.target.words}
             poolExtra={data.target.wordDistractors} onDone={advance} onWrong={() => addWrong("word")} />
         </>
@@ -902,7 +923,7 @@ function GrammarSentenceQuiz({ data, onAllDone, onExit }) {
 
       {kind === "char" && (
         <>
-          <p className="vi-copy sentence-vi">{data.target.vi}</p>
+          {lang === "vi" && <p className="vi-copy sentence-vi">{data.target.vi}</p>}
           <SentenceBuilder prefilled={data.target.prefilledChar} targetTokens={data.target.chars}
             poolExtra={[]} onDone={advance} onWrong={() => addWrong("char")} />
         </>
@@ -1043,6 +1064,7 @@ function GrammarStage({ session, patchSession }) {
   const g = SESSION1.grammar;
   const tab = session.grammar.view === "quiz" ? "quiz" : "teach";
   const teachStep = session.grammar.teachStep || "text";
+  const { lang } = useLang();
 
   return (
     <div className="stage-section grammar-stage">
@@ -1059,8 +1081,7 @@ function GrammarStage({ session, patchSession }) {
             <div>
               <span>{g.label}</span>
               <h2>{g.title}</h2>
-              <p>{g.rule}</p>
-              <p className="vi-copy">{g.ruleVi}</p>
+              <p>{pick(lang, g.rule, g.ruleVi)}</p>
             </div>
             <img alt="표현을 설명하는 K-Chao 교재 캐릭터" src="/assets/guide.png" />
           </div>
@@ -1111,6 +1132,7 @@ function GrammarStage({ session, patchSession }) {
 
 function ListeningStage({ session, patchSession }) {
   const l = SESSION1.listening;
+  const { lang } = useLang();
   const synth = () => {
     try {
       const u = new SpeechSynthesisUtterance("안녕하세요? 저는 하영이에요. 만나서 반가워요. 저는 유나예요.");
@@ -1137,8 +1159,7 @@ function ListeningStage({ session, patchSession }) {
         <div className="sound-bars" aria-hidden="true">{Array.from({ length: 7 }).map((_, i) => <i key={i} />)}</div>
       </button>
       <section className="assessment-card">
-        <h3>{l.prompt}</h3>
-        <p className="vi-copy">{l.promptVi}</p>
+        <h3>{pick(lang, l.prompt, l.promptVi)}</h3>
         <div className="choice-list">
           {l.choices.map((choice) => (
             <button key={choice} type="button" disabled={!session.listening.listened}
@@ -1156,6 +1177,7 @@ function ListeningStage({ session, patchSession }) {
 
 function ReadingStage({ session, patchSession }) {
   const r = SESSION1.reading;
+  const { lang } = useLang();
   const choose = (choice) => {
     patchSession((prev) => ({ reading: { attempts: prev.reading.attempts + 1, selected: choice, passed: choice === r.answer } }));
   };
@@ -1166,11 +1188,10 @@ function ReadingStage({ session, patchSession }) {
       <article className="reading-passage">
         <BookIcon size={24} />
         <p>{r.passage}</p>
-        <span>{r.passageVi}</span>
+        {lang === "vi" && <span>{r.passageVi}</span>}
       </article>
       <section className="assessment-card">
-        <h3>{r.prompt}</h3>
-        <p className="vi-copy">{r.promptVi}</p>
+        <h3>{pick(lang, r.prompt, r.promptVi)}</h3>
         <div className="choice-list">
           {r.choices.map((choice) => (
             <button key={choice} type="button"
@@ -1185,6 +1206,7 @@ function ReadingStage({ session, patchSession }) {
 
 function DialogueStage({ session, patchSession }) {
   const d = SESSION1.dialogue;
+  const { lang } = useLang();
   const speak = (ko) => {
     try {
       const u = new SpeechSynthesisUtterance(ko);
@@ -1204,7 +1226,7 @@ function DialogueStage({ session, patchSession }) {
             <button type="button" aria-label={`${line.speaker}: ${line.ko} 듣기`} onClick={() => speak(line.ko)}>
               <PlaySmallIcon size={17} />
             </button>
-            <p><strong>{line.speaker}: {line.ko}</strong><span>{line.speaker}: {line.vi}</span></p>
+            <p><strong>{line.speaker}: {line.ko}</strong>{lang === "vi" && <span>{line.speaker}: {line.vi}</span>}</p>
           </div>
         ))}
       </div>
@@ -1218,6 +1240,7 @@ function DialogueStage({ session, patchSession }) {
 
 function SpeakingStage({ session, patchSession }) {
   const sp = SESSION1.speaking;
+  const { lang } = useLang();
   const [tab, setTab] = useState(session.speaking.mode === "text" ? "text" : "audio");
   const [recording, setRecording] = useState(false);
   const [text, setText] = useState(session.speaking.text);
@@ -1258,8 +1281,7 @@ function SpeakingStage({ session, patchSession }) {
   return (
     <div className="stage-section speaking-stage">
       <div className="stage-kicker"><MicIcon size={17} /> 말하기</div>
-      <h2>내 정보로 짧게 말하고 저장해요.</h2>
-      <p className="vi-copy large">Nói lời chào và tên của bạn rồi lưu lại.</p>
+      <h2>{pick(lang, "내 정보로 짧게 말하고 저장해요.", "Nói lời chào và tên của bạn rồi lưu lại.")}</h2>
       <section className="recorder-card">
         <div className="output-tabs" role="tablist" aria-label="말하기 저장 방식">
           <button type="button" role="tab" aria-selected={tab === "audio"} onClick={() => setTab("audio")}>
@@ -1303,14 +1325,14 @@ function SpeakingStage({ session, patchSession }) {
 
 function WritingStage({ session, patchSession }) {
   const w = SESSION1.writing;
+  const { lang } = useLang();
   const [text, setText] = useState(session.writing.text);
   const save = () => patchSession({ writing: { saved: true, text, savedAt: new Date().toISOString() } });
   return (
     <div className="stage-section writing-stage">
       <div className="stage-kicker">쓰기</div>
       <h2>내 정보가 들어간 문장을 직접 써요.</h2>
-      <p>{w.prompt}</p>
-      <p className="vi-copy">{w.promptVi}</p>
+      <p>{pick(lang, w.prompt, w.promptVi)}</p>
       <div className="writing-example"><span>예시</span>{w.example.map((l) => <p key={l}>{l}</p>)}</div>
       <label htmlFor="writing-1">내 문장</label>
       <textarea id="writing-1" rows={6} placeholder="여기에 내 문장을 써 주세요."
