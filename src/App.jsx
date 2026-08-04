@@ -557,15 +557,21 @@ function PronunciationModal({ words, index, onClose, onNext }) {
 function ContextStage() {
   const c = SESSION1.context;
   const [pronIndex, setPronIndex] = useState(null);
-  const { lang } = useLang();
+  const [tab, setTab] = useState("all");
   return (
     <div className="stage-section context-stage">
       <h2>나라와 국적 어휘</h2>
       <p className="stage-lead">{c.quizPrompt}</p>
+      <div className="wordbook-tabs" role="tablist" aria-label="단어장 보기 방식">
+        <button type="button" role="tab" aria-selected={tab === "all"} onClick={() => setTab("all")}>전체 보기</button>
+        <button type="button" role="tab" aria-selected={tab === "ko"} onClick={() => setTab("ko")}>한국어 보기</button>
+        <button type="button" role="tab" aria-selected={tab === "vi"} onClick={() => setTab("vi")}>베트남어 보기</button>
+      </div>
       <div className="wordbook-list">
         {c.words.map((w, idx) => (
           <div className="wordbook-row" key={w.ko} role="button" tabIndex={0} onClick={() => setPronIndex(idx)}>
-            {lang === "ko" ? <span className="wordbook-ko">{w.ko}</span> : <span className="wordbook-vi">{w.vi}</span>}
+            {tab !== "vi" && <span className="wordbook-ko">{w.ko}</span>}
+            {tab !== "ko" && <span className="wordbook-vi">{w.vi}</span>}
             <button type="button" className="wordbook-speak" aria-label={`${w.ko} 듣기`} onClick={(e) => { e.stopPropagation(); speakKo(w.ko); }}>
               <SpeakerIcon size={16} />
             </button>
