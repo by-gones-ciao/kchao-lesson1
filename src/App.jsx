@@ -18,7 +18,10 @@ import { VN, KR, ID, RU, US, CA, TH, FR, CN, JP, MY, DE } from "country-flag-ico
 function loadState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return { ...parsed, view: "home" };
+    }
   } catch { /* ignore corrupt storage */ }
   return { version: 1, view: "home", activeSession: 1, sessions: { 1: defaultSessionState() }, weakQueue: [] };
 }
