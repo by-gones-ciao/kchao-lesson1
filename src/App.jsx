@@ -483,13 +483,15 @@ function PronunciationModal({ words, index, onClose, onNext }) {
 
   const retry = () => { setPhase("record"); setScore(null); };
   const next = () => { if (index + 1 < words.length) onNext(index + 1); else onClose(); };
+  const prev = () => { if (index > 0) onNext(index - 1); else onClose(); };
   const pct = Math.round(((index + 1) / words.length) * 100);
 
   return (
     <div className="pron-overlay" role="dialog" aria-modal="true" aria-label="발음 평가">
       <div className="pron-topbar">
+        <button type="button" className="pron-back" aria-label="이전 화면" onClick={prev}><ArrowLeft size={22} /></button>
         <div className="pron-progress"><span style={{ width: `${pct}%` }} /></div>
-        <button type="button" className="pron-close" aria-label="닫기" onClick={onClose}><XCircle size={26} /></button>
+        <button type="button" className="pron-close" aria-label="건너뛰기" onClick={onClose}><XCircle size={26} /></button>
       </div>
       <p className="pron-title">다음 단어를 발음해 보세요</p>
       <div className="pron-image"><img alt="" src="/assets/classroom.jpg" /></div>
@@ -779,7 +781,7 @@ function SentenceBuilder({ prefilled, targetTokens, poolExtra, onDone, onWrong }
 // ---------------------------------------------------------------------
 // grammar sentence quiz — 7-step exercise sequence ("문제 풀기")
 // ---------------------------------------------------------------------
-function GrammarSentenceQuiz({ data, onAllDone }) {
+function GrammarSentenceQuiz({ data, onAllDone, onExit }) {
   const STEPS = ["blank", "word", "char", "translate", "listenWord", "listenChar", "listenType"];
   const PROMPTS = {
     blank: "빈칸에 들어갈 말을 선택하세요",
@@ -825,6 +827,10 @@ function GrammarSentenceQuiz({ data, onAllDone }) {
     if (step + 1 < totalSteps) setStep(step + 1);
     else onAllDone();
   };
+  const goPrev = () => {
+    if (step > 0) setStep(step - 1);
+    else onExit();
+  };
   const chooseBlank = (choice) => {
     if (selected) return;
     setSelected(choice);
@@ -852,6 +858,7 @@ function GrammarSentenceQuiz({ data, onAllDone }) {
   return (
     <div className="pron-overlay" role="dialog" aria-modal="true" aria-label="문법 문제 풀기">
       <div className="pron-topbar">
+        <button type="button" className="pron-back" aria-label="이전 화면" onClick={goPrev}><ArrowLeft size={22} /></button>
         <div className="pron-progress"><span style={{ width: `${pct}%` }} /></div>
         <button type="button" className="pron-close" aria-label="문제 건너뛰기" onClick={onAllDone}><XCircle size={26} /></button>
       </div>
@@ -1092,6 +1099,7 @@ function GrammarStage({ session, patchSession }) {
         <GrammarSentenceQuiz
           data={g.sentenceQuiz}
           onAllDone={() => patchSession((prev) => ({ grammar: { ...prev.grammar, passed: true } }))}
+          onExit={() => patchSession((prev) => ({ grammar: { ...prev.grammar, view: "teach" } }))}
         />
       )}
     </div>
