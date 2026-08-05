@@ -155,8 +155,24 @@ function BottomNav({ active, setView }) {
 // ---------------------------------------------------------------------
 // home
 // ---------------------------------------------------------------------
+function SessionRing({ frac, completed }) {
+  const deg = Math.round(frac * 360);
+  return (
+    <div className="session-ring" style={{ background: `conic-gradient(var(--teal) ${deg}deg, #e2e8ea ${deg}deg)` }}>
+      <div className="session-ring-hole">{completed && <span>완료</span>}</div>
+    </div>
+  );
+}
+
 function HomeScreen({ state, setState, setView, completedCount }) {
   const pct = Math.round((completedCount / SESSIONS.length) * 100);
+  const sessionProgress = (sess, id) => {
+    if (!sess) return 0;
+    if (sess.completed) return 1;
+    const order = id === 1 ? STAGE_ORDER.filter((x) => x !== "recall") : STAGE_ORDER;
+    const idx = order.indexOf(sess.stage);
+    return order.length ? Math.max(0, idx) / order.length : 0;
+  };
   const startSession = (id) => {
     setState((s) => ({
       ...s,
@@ -196,7 +212,7 @@ function HomeScreen({ state, setState, setView, completedCount }) {
         </section>
         <section className="session-path" aria-labelledby="path-title">
           <div className="section-heading">
-            <div><h2 id="path-title">1과 학습 순서</h2><p>각 차시에서 여섯 영역을 모두 연습해요.</p></div>
+            <div><h2 id="path-title">1과 학습 순서</h2></div>
           </div>
           <div className="timeline">
             {SESSIONS.map((s) => {
@@ -213,7 +229,7 @@ function HomeScreen({ state, setState, setView, completedCount }) {
                     <div className="session-card-main">
                       <span className="session-index">{s.id}차시</span>
                       <div><h3>{s.title}</h3><p><em>{s.label}</em> {s.expression}</p></div>
-                      {unlocked ? <ChevronRight size={19} /> : <LockIcon size={18} />}
+                      {unlocked ? <SessionRing frac={sessionProgress(sess, s.id)} completed={completed} /> : <LockIcon size={18} />}
                     </div>
                   </button>
                   {unlocked && (
@@ -382,9 +398,8 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
       </header>
       <div className="learning-progress-wrap">
         <div className="lang-toggle-row"><LangToggle /></div>
-        <div className="stage-bars" style={{ gridTemplateColumns: `repeat(${stageOrder.length},1fr)` }}
-          aria-label={`${stageIndex + 1}/${stageOrder.length}단계`}>
-          {stageOrder.map((_, i) => <span key={i} className={i <= stageIndex ? "active" : ""} />)}
+        <div className="stage-bars" aria-label={`${stageIndex + 1}/${stageOrder.length}단계`}>
+          <span style={{ width: `${((stageIndex + 1) / stageOrder.length) * 100}%` }} />
         </div>
       </div>
       <main className="learning-content" aria-labelledby="current-stage-label">
@@ -409,17 +424,17 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
             <button type="button" className="primary-button" onClick={finishSession}>차시 완료하고 다음 열기<CheckCircle /></button>
           )
         ) : session.stage === "grammar" && !session.grammar.passed
-          && session.grammar.view !== "quiz" && (session.grammar.teachStep || "text") === "text" ? (
+          && session.grammar.view === "teach" && (session.grammar.teachStep || "text") === "text" ? (
           <div className="grammar-choice-footer">
             <button type="button" className="active"
-              onClick={() => patchSession((prev) => ({ grammar: { ...prev.grammar, view: "teach", teachStep: "video" } }))}>선생님 설명</button>
+              onClick={() => patchSession((prev) => ({ grammar: { ...prev.grammar, view: "teach", teachStep: "video" } }))}>문법 영상 보기</button>
             <button type="button"
-              onClick={() => patchSession((prev) => ({ grammar: { ...prev.grammar, view: "quiz" } }))}>문제 풀기</button>
+              onClick={() => patchSession((prev) => ({ grammar: { ...prev.grammar, view: "intro" } }))}>바로 문제 풀기</button>
           </div>
         ) : session.stage === "grammar" && !session.grammar.passed
           && session.grammar.view === "teach" && session.grammar.teachStep === "video" ? (
           <button type="button" className="primary-button"
-            onClick={() => patchSession((prev) => ({ grammar: { ...prev.grammar, view: "quiz" } }))}>다음<ArrowRight /></button>
+            onClick={() => patchSession((prev) => ({ grammar: { ...prev.grammar, view: "intro" } }))}>다음<ArrowRight /></button>
         ) : session.stage === "context" && session.vocabFlow === "wordbook" ? (
           <div className="grammar-choice-footer">
             <button type="button" className="active" onClick={() => patchSession({ vocabFlow: "intro" })}>선생님 설명 보기</button>
@@ -447,11 +462,9 @@ function MissionStage() {
   return (
     <div className="stage-section mission-stage">
       <div className="stage-kicker"><InfoCircleIcon size={18} /> 학습 목표</div>
-      <h2>{pick(lang, m.ko, m.vi)}</h2>
+      <h2 className="mission-goal-text">{pick(lang, m.ko, m.vi)}</h2>
       <div className="mission-image"><img alt="오늘 학습 상황" src={LESSON.heroImage} /></div>
-      <div className="mission-meta"><span>{m.pages}</span><strong>{m.artifact}</strong></div>
       <div className="six-skill-note">
-        <InfoCircleIcon size={20} />
         <p><strong>1차시에서는 나라와 국적 어휘를 배웁니다.</strong><span>이 어휘를 알아야 자기소개를 할 때 어느 나라 사람인지 말할 수 있습니다.</span></p>
       </div>
     </div>
@@ -784,7 +797,7 @@ function MatchPairsQuestion({ pairs, onDone }) {
 
 // single-blank fill: word-tile pool (with 글자/키보드 toggle + hint) or plain
 // keyboard entry, used for the "phrase-blank" / "sentence-blank" vocab types
-function BlankChoiceQuestion({ prefix, suffix, answer, distractors, advance, onWrong }) {
+function BlankChoiceQuestion({ prefix, suffix, answer, distractors, advance, onWrong, speaker }) {
   const [selected, setSelected] = useState(null);
   const [mode, setMode] = useState("tile");
   const [typed, setTyped] = useState("");
@@ -812,12 +825,17 @@ function BlankChoiceQuestion({ prefix, suffix, answer, distractors, advance, onW
 
   return (
     <>
+      {speaker && (
+        <button type="button" className="quiz-speak-btn" aria-label="다시 듣기" onClick={speaker}>
+          <SpeakerIcon size={26} />
+        </button>
+      )}
       <div className="blank-sentence-line">{prefix}<span className="gap">{selected || ""}</span>{suffix}</div>
       {mode === "tile" ? (
         <div className="tile-pool">
           {options.map((opt) => {
             let cls = "";
-            if (selected === opt) cls = opt === answer ? "correct" : "wrong";
+            if (selected === opt) cls = opt === answer ? "used" : "wrong";
             if (hintOn && opt === answer && !selected) cls += " hinted";
             return (
               <button key={opt} type="button" disabled={!!selected} className={cls} onClick={() => pick(opt)}>{opt}</button>
@@ -873,8 +891,6 @@ function VocabStage({ patchSession, onComplete, onBack }) {
   };
 
   const pct = Math.round(((qIndex + 1) / questions.length) * 100);
-  const blankWord = (correctVisible) =>
-    q.word.ko.split("").map((ch, i) => (i === q.blankIndex ? (correctVisible ? ch : "_") : ch)).join("");
 
   return (
     <div className="pron-overlay" role="dialog" aria-modal="true" aria-label="어휘 퀴즈">
@@ -883,8 +899,8 @@ function VocabStage({ patchSession, onComplete, onBack }) {
         <div className="pron-progress"><span style={{ width: `${pct}%` }} /></div>
         <button type="button" className="pron-close" aria-label="퀴즈 건너뛰기" onClick={finish}><XCircle size={26} /></button>
       </div>
-      <p className="pron-title">{QUIZ_PROMPTS[q.type]}</p>
       {banner === q.type && <MicroBanner typeKey={q.type} onDismiss={() => setBanner(null)} />}
+      <p className="pron-title">{QUIZ_PROMPTS[q.type]}</p>
 
       {q.type === "vi-to-ko" && (
         <>
@@ -961,23 +977,8 @@ function VocabStage({ patchSession, onComplete, onBack }) {
       )}
 
       {q.type === "listen-blank" && (
-        <>
-          <button type="button" className="quiz-speak-btn" aria-label="다시 듣기" onClick={() => speakKo(q.word.ko)}>
-            <SpeakerIcon size={26} />
-          </button>
-          <div className="quiz-blank-word">{blankWord(!!selected)}</div>
-          <div className="quiz-blank-options">
-            {shuffle([q.correctChar, ...q.charDistractors]).map((ch) => {
-              let cls = "";
-              if (selected === ch) cls = ch === q.correctChar ? "correct" : "wrong";
-              return (
-                <button key={ch} type="button" className={cls} disabled={!!selected} onClick={() => choose(ch, ch === q.correctChar)}>
-                  {ch}
-                </button>
-              );
-            })}
-          </div>
-        </>
+        <BlankChoiceQuestion prefix={q.word.ko.slice(0, q.blankIndex)} suffix={q.word.ko.slice(q.blankIndex + 1)}
+          answer={q.correctChar} distractors={q.charDistractors} advance={advance} speaker={() => speakKo(q.word.ko)} />
       )}
 
       {q.type === "vi-blank" && (
@@ -1011,10 +1012,20 @@ function ModeToggle({ mode, setMode }) {
   );
 }
 function HintButton({ onHint }) {
+  const [showInfo, setShowInfo] = useState(false);
   return (
-    <button type="button" className="hint-corner" aria-label="힌트" onClick={onHint}>
-      <LightbulbIcon size={16} />
-    </button>
+    <div className="hint-wrap">
+      {showInfo && (
+        <div className="hint-tooltip">
+          "글자 사용하기" 모드에서 정답이 보기에 하이라이트로 표시돼요.
+        </div>
+      )}
+      <button type="button" className="hint-corner" aria-label="힌트" onClick={onHint}>
+        <LightbulbIcon size={16} />
+        <span className="hint-i" role="button" tabIndex={0} aria-label="힌트 사용법"
+          onClick={(e) => { e.stopPropagation(); setShowInfo((v) => !v); }}>i</span>
+      </button>
+    </div>
   );
 }
 
@@ -1181,8 +1192,8 @@ function GrammarSentenceQuiz({ data, onAllDone, onExit }) {
       {!inPractice && kind && (
         <>
       {inRetry && <div className="stage-kicker retry-kicker">오답 다시 풀기 · {retryIndex + 1}/{retryKinds.length}</div>}
-      <p className="pron-title">{PROMPTS[kind]}</p>
       {banner === kind && <MicroBanner typeKey={kind} onDismiss={() => setBanner(null)} />}
+      <p className="pron-title">{PROMPTS[kind]}</p>
 
       {kind === "blank" && (
         <>
@@ -1336,24 +1347,32 @@ function PracticeSpeakingItem({ item, onDone }) {
 
 function GrammarStage({ session, patchSession }) {
   const g = SESSION1.grammar;
-  const tab = session.grammar.view === "quiz" ? "quiz" : "teach";
+  const view = session.grammar.view;
   const teachStep = session.grammar.teachStep || "text";
   const { lang } = useLang();
 
+  if (view === "intro") {
+    return (
+      <div className="stage-section grammar-stage">
+        <DobiraCard kind="grammar" onStart={() => patchSession((prev) => ({
+          dobiraSeen: { ...prev.dobiraSeen, grammar: true },
+          grammar: { ...prev.grammar, view: "quiz" },
+        }))} />
+      </div>
+    );
+  }
+
   return (
     <div className="stage-section grammar-stage">
-      {tab === "teach" && teachStep === "video" && (
+      {view === "teach" && teachStep === "video" && (
         <div className="video-block">
           <div className="media-label">선생님 설명</div>
           <video src="/media/lesson1-guide.mp4" poster="/assets/tutor.jpg" controls playsInline preload="metadata" autoPlay>한국어 설명 영상</video>
         </div>
       )}
 
-      {tab === "teach" && teachStep === "text" && (
+      {view === "teach" && teachStep === "text" && (
         <>
-          {!session.dobiraSeen?.grammar && (
-            <DobiraCard kind="grammar" onStart={() => patchSession((prev) => ({ dobiraSeen: { ...prev.dobiraSeen, grammar: true } }))} />
-          )}
           <div className="grammar-hero">
             <div>
               <span>{g.label}</span>
@@ -1387,20 +1406,14 @@ function GrammarStage({ session, patchSession }) {
               {g.supplement.summary.map(([a, b]) => <span key={a}>{a} → {b}</span>)}
             </div>
           </div>
-          <div className="example-block">
-            <span>예문</span>
-            {g.examples.map((ex) => (
-              <button key={ex} type="button"><PlaySmallIcon size={18} /><strong>{ex}</strong></button>
-            ))}
-          </div>
         </>
       )}
 
-      {tab === "quiz" && (
+      {view === "quiz" && (
         <GrammarSentenceQuiz
           data={g.sentenceQuiz}
           onAllDone={() => patchSession((prev) => ({ grammar: { ...prev.grammar, passed: true, view: "teach", teachStep: "text" } }))}
-          onExit={() => patchSession((prev) => ({ grammar: { ...prev.grammar, view: "teach" } }))}
+          onExit={() => patchSession((prev) => ({ grammar: { ...prev.grammar, view: "intro" } }))}
         />
       )}
     </div>
