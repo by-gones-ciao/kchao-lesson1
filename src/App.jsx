@@ -433,8 +433,12 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
           </div>
         ) : session.stage === "grammar" && !session.grammar.passed
           && session.grammar.view === "teach" && session.grammar.teachStep === "video" ? (
-          <button type="button" className="primary-button"
-            onClick={() => patchSession((prev) => ({ grammar: { ...prev.grammar, view: "intro" } }))}>다음<ArrowRight /></button>
+          session.grammar.videoDone ? (
+            <button type="button" className="primary-button"
+              onClick={() => patchSession((prev) => ({ grammar: { ...prev.grammar, view: "intro" } }))}>문제 풀기<ArrowRight /></button>
+          ) : (
+            <p className="footer-hint-text">영상을 끝까지 보면 다음으로 넘어갈 수 있어요.</p>
+          )
         ) : session.stage === "context" && session.vocabFlow === "wordbook" ? (
           <div className="grammar-choice-footer">
             <button type="button" className="active" onClick={() => patchSession({ vocabFlow: "intro" })}>선생님 설명 보기</button>
@@ -1390,7 +1394,11 @@ function GrammarStage({ session, patchSession }) {
       {view === "teach" && teachStep === "video" && (
         <div className="video-block">
           <div className="media-label">선생님 설명</div>
-          <video src="/media/lesson1-guide.mp4" poster="/assets/tutor.jpg" controls playsInline preload="metadata" autoPlay>한국어 설명 영상</video>
+          <video src="/media/lesson1-guide.mp4" poster="/assets/tutor.jpg" controls playsInline preload="metadata" autoPlay
+            onEnded={() => patchSession((prev) => ({ grammar: { ...prev.grammar, videoDone: true } }))}>
+            <track kind="captions" src="/media/lesson1-guide.vtt" srcLang="ko" label="한국어" default />
+            한국어 설명 영상
+          </video>
         </div>
       )}
 
