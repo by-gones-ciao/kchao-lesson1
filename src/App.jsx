@@ -873,10 +873,8 @@ function BlankChoiceQuestion({ prefix, suffix, answer, distractors, advance, onW
           <button type="button" className="secondary-button" disabled={!typed.trim() || !!selected} onClick={submitTyped}>확인</button>
         </div>
       )}
-      <div className="mode-hint-row">
-        <ModeToggle mode={mode} setMode={setMode} />
-        {mode === "tile" && !selected && <HintButton onHint={hint} />}
-      </div>
+      <div className="mode-hint-row"><ModeToggle mode={mode} setMode={setMode} /></div>
+      {mode === "tile" && !selected && <HintButton onHint={hint} />}
     </>
   );
 }
@@ -1110,7 +1108,7 @@ function SentenceBuilder({ targetTokens, poolExtra, joinWith = "", onDone, onWro
 
   return (
     <>
-      <div className="single-blank-line">{isDone ? target : ""}</div>
+      <div className="single-blank-line">{placed.join(joinWith)}</div>
       {mode === "tile" ? (
         <div className="tile-pool">
           {pool.map(({ t, k }) => (
@@ -1126,10 +1124,8 @@ function SentenceBuilder({ targetTokens, poolExtra, joinWith = "", onDone, onWro
           <button type="button" className="secondary-button" disabled={!typed.trim() || isDone} onClick={submitTyped}>확인</button>
         </div>
       )}
-      <div className="mode-hint-row">
-        <ModeToggle mode={mode} setMode={setMode} />
-        {mode === "tile" && <HintButton onHint={hint} />}
-      </div>
+      <div className="mode-hint-row"><ModeToggle mode={mode} setMode={setMode} /></div>
+      {mode === "tile" && <HintButton onHint={hint} />}
     </>
   );
 }
