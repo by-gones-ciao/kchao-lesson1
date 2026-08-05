@@ -990,12 +990,12 @@ function VocabStage({ patchSession, onComplete, onBack }) {
 
       {q.type === "phrase-blank" && (
         <BlankChoiceQuestion prefix="" suffix=" 사람" answer={q.word.ko} distractors={q.countryDistractors}
-          advance={advance} />
+          advance={advance} speaker={() => speakKo(q.word.ko)} />
       )}
 
       {q.type === "sentence-blank" && (
         <BlankChoiceQuestion prefix="저는 " suffix=" 사람이에요" answer={q.word.ko} distractors={q.countryDistractors}
-          advance={advance} />
+          advance={advance} speaker={() => speakKo(q.word.ko)} />
       )}
 
       {q.type === "listen-blank" && (
