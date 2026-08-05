@@ -55,6 +55,7 @@
 .quiz-audio-grid button.correct{border-color:var(--teal);background:#f1fffe;color:var(--teal-dark)}
 .quiz-audio-grid button.wrong{border-color:#f16f74;background:#fff7f7;color:#d6464b}
 .match-pairs-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.match-col{display:flex;flex-direction:column;gap:10px}
 .match-tile{min-height:48px;padding:10px;border:1px solid var(--line);border-radius:10px;font-size:13px;font-weight:750;color:var(--ink);background:#fff;cursor:pointer;text-align:center}
 .match-tile.selected{border-color:var(--teal-dark);background:var(--teal-soft);color:var(--teal-dark)}
 .match-tile.matched{border-color:var(--teal);background:var(--teal-soft);color:var(--teal-dark);cursor:not-allowed}
