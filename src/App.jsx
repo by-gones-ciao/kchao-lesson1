@@ -849,12 +849,14 @@ function BlankChoiceQuestion({ prefix, suffix, answer, distractors, advance, onW
 
   return (
     <>
-      {speaker && (
-        <button type="button" className="quiz-speak-btn" aria-label="다시 듣기" onClick={speaker}>
-          <SpeakerIcon size={26} />
-        </button>
+      {speaker ? (
+        <div className="speak-blank-box">
+          <button type="button" className="speak-blank-icon" aria-label="다시 듣기" onClick={speaker}><SpeakerIcon size={18} /></button>
+          <div className="blank-sentence-line">{prefix}<span className="gap">{selected || ""}</span>{suffix}</div>
+        </div>
+      ) : (
+        <div className="blank-sentence-line">{prefix}<span className="gap">{selected || ""}</span>{suffix}</div>
       )}
-      <div className="blank-sentence-line">{prefix}<span className="gap">{selected || ""}</span>{suffix}</div>
       {mode === "tile" ? (
         <div className="tile-pool">
           {options.map((opt) => {
@@ -1055,7 +1057,7 @@ function HintButton({ onHint }) {
 // sentence builder — shared tap-to-place mechanic for word/char ordering,
 // with a 글자/키보드 입력 모드 toggle and a hint that highlights the next tile
 // ---------------------------------------------------------------------
-function SentenceBuilder({ targetTokens, poolExtra, joinWith = "", onDone, onWrong }) {
+function SentenceBuilder({ targetTokens, poolExtra, joinWith = "", onDone, onWrong, speaker }) {
   const pool = useMemo(() => shuffle(targetTokens.map((t, i) => ({ t, k: `t${i}` })).concat(
     poolExtra.map((t, i) => ({ t, k: `d${i}` }))
   )), [targetTokens, poolExtra]);
@@ -1108,7 +1110,14 @@ function SentenceBuilder({ targetTokens, poolExtra, joinWith = "", onDone, onWro
 
   return (
     <>
-      <div className="single-blank-line">{placed.join(joinWith)}</div>
+      {speaker ? (
+        <div className="speak-blank-box">
+          <button type="button" className="speak-blank-icon" aria-label="다시 듣기" onClick={speaker}><SpeakerIcon size={18} /></button>
+          <div className="single-blank-line">{placed.join(joinWith)}</div>
+        </div>
+      ) : (
+        <div className="single-blank-line">{placed.join(joinWith)}</div>
+      )}
       {mode === "tile" ? (
         <div className="tile-pool">
           {pool.map(({ t, k }) => (
@@ -1276,23 +1285,13 @@ function GrammarSentenceQuiz({ data, onAllDone, onExit }) {
       )}
 
       {kind === "listenWord" && (
-        <>
-          <button type="button" className="quiz-speak-btn" aria-label="다시 듣기" onClick={() => speakKo(data.target.ko)}>
-            <SpeakerIcon size={26} />
-          </button>
-          <SentenceBuilder targetTokens={data.target.words} joinWith=" "
-            poolExtra={data.target.wordDistractors} onDone={advance} onWrong={() => addWrong("listenWord")} />
-        </>
+        <SentenceBuilder targetTokens={data.target.words} joinWith=" " speaker={() => speakKo(data.target.ko)}
+          poolExtra={data.target.wordDistractors} onDone={advance} onWrong={() => addWrong("listenWord")} />
       )}
 
       {kind === "listenChar" && (
-        <>
-          <button type="button" className="quiz-speak-btn" aria-label="다시 듣기" onClick={() => speakKo(data.target.ko)}>
-            <SpeakerIcon size={26} />
-          </button>
-          <SentenceBuilder targetTokens={data.target.chars} joinWith=""
-            poolExtra={[]} onDone={advance} onWrong={() => addWrong("listenChar")} />
-        </>
+        <SentenceBuilder targetTokens={data.target.chars} joinWith="" speaker={() => speakKo(data.target.ko)}
+          poolExtra={[]} onDone={advance} onWrong={() => addWrong("listenChar")} />
       )}
         </>
       )}
