@@ -197,6 +197,7 @@ export function defaultSessionState() {
     contextConfirmed: false,
     vocabTouched: [],
     dobiraSeen: { vocab: false, grammar: false },
+    vocabFlow: "wordbook",
     grammar: { attempts: 0, passed: false, retry: false, selected: "", view: "teach", teachStep: "text" },
     listening: { attempts: 0, listened: false, passed: false, selected: "" },
     reading: { attempts: 0, passed: false, selected: "" },

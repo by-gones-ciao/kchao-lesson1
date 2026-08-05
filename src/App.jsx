@@ -318,16 +318,22 @@ function RecordsScreen({ state, setView, completedCount }) {
 // learning screen (stage router)
 // ---------------------------------------------------------------------
 function LearningScreen({ state, setState, session, patchSession, setView }) {
-  const stageIndex = STAGE_ORDER.indexOf(session.stage);
+  // "퀵리뷰"(recall) only makes sense once a learner has prior sessions to
+  // recall — 1차시 has nothing to look back on, so it's skipped there.
+  const stageOrder = useMemo(
+    () => (state.activeSession === 1 ? STAGE_ORDER.filter((s) => s !== "recall") : STAGE_ORDER),
+    [state.activeSession]
+  );
+  const stageIndex = stageOrder.indexOf(session.stage);
   const meta = SESSIONS.find((s) => s.id === state.activeSession);
 
   const goBack = () => {
     if (stageIndex === 0) { setView("home"); return; }
-    const prev = STAGE_ORDER[stageIndex - 1];
+    const prev = stageOrder[stageIndex - 1];
     patchSession({ stage: prev });
   };
   const goNext = () => {
-    const next = STAGE_ORDER[stageIndex + 1];
+    const next = stageOrder[stageIndex + 1];
     if (!next) return;
     patchSession((prev) => ({ stage: next, visited: prev.visited.includes(next) ? prev.visited : [...prev.visited, next] }));
   };
@@ -376,8 +382,9 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
       </header>
       <div className="learning-progress-wrap">
         <div className="lang-toggle-row"><LangToggle /></div>
-        <div className="stage-bars" aria-label={`${stageIndex + 1}/${STAGE_ORDER.length}단계`}>
-          {STAGE_ORDER.map((_, i) => <span key={i} className={i <= stageIndex ? "active" : ""} />)}
+        <div className="stage-bars" style={{ gridTemplateColumns: `repeat(${stageOrder.length},1fr)` }}
+          aria-label={`${stageIndex + 1}/${stageOrder.length}단계`}>
+          {stageOrder.map((_, i) => <span key={i} className={i <= stageIndex ? "active" : ""} />)}
         </div>
       </div>
       <main className="learning-content" aria-labelledby="current-stage-label">
@@ -413,6 +420,11 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
           && session.grammar.view === "teach" && session.grammar.teachStep === "video" ? (
           <button type="button" className="primary-button"
             onClick={() => patchSession((prev) => ({ grammar: { ...prev.grammar, view: "quiz" } }))}>다음<ArrowRight /></button>
+        ) : session.stage === "context" && session.vocabFlow === "wordbook" ? (
+          <div className="grammar-choice-footer">
+            <button type="button" className="active" onClick={() => patchSession({ vocabFlow: "intro" })}>선생님 설명 보기</button>
+            <button type="button" onClick={goNext}>바로 문제 풀기</button>
+          </div>
         ) : (
           <div className="footer-nav-row">
             {!canProceed && (
@@ -563,13 +575,27 @@ function ContextStage({ session, patchSession }) {
   const c = SESSION1.context;
   const [pronIndex, setPronIndex] = useState(null);
   const [tab, setTab] = useState("all");
+
+  if (session.vocabFlow === "intro") {
+    return (
+      <div className="stage-section context-stage">
+        <div className="stage-kicker">오늘의 단어</div>
+        <h2>나라와 국적</h2>
+        <DobiraCard kind="vocab" onStart={() => patchSession((prev) => ({
+          dobiraSeen: { ...prev.dobiraSeen, vocab: true },
+          vocabFlow: "wordbook",
+          stage: "vocab",
+          visited: prev.visited.includes("vocab") ? prev.visited : [...prev.visited, "vocab"],
+        }))} />
+      </div>
+    );
+  }
+
   return (
     <div className="stage-section context-stage">
-      <h2>나라와 국적 어휘</h2>
-      <p className="stage-lead">{c.quizPrompt}</p>
-      {!session.dobiraSeen?.vocab && (
-        <DobiraCard kind="vocab" onStart={() => patchSession((prev) => ({ dobiraSeen: { ...prev.dobiraSeen, vocab: true } }))} />
-      )}
+      <span className="stage-kicker">오늘의 단어</span>
+      <h2>나라와 국적</h2>
+      <p className="stage-lead">단어를 눌러 발음 평가도 진행해 보세요.</p>
       <div className="wordbook-tabs" role="tablist" aria-label="단어장 보기 방식">
         <button type="button" role="tab" aria-selected={tab === "all"} onClick={() => setTab("all")}>전체 보기</button>
         <button type="button" role="tab" aria-selected={tab === "ko"} onClick={() => setTab("ko")}>한국어 보기</button>
