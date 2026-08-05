@@ -1303,6 +1303,10 @@ function GrammarSentenceQuiz({ data, onAllDone, onExit }) {
       )}
         </>
       )}
+
+      <button type="button" className="quiz-skip-btn" disabled={!!selected} onClick={advance}>
+        이 문제 건너뛰기
+      </button>
     </div>
   );
 }
