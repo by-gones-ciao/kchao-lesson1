@@ -687,6 +687,29 @@ const DOBIRA_COPY = {
   grammar: { ko: "자기소개의 기본 문장이에요. 여러 방식으로 연습해서 자연스럽게 말해봐요.", vi: "Đây là câu cơ bản khi tự giới thiệu. Luyện nhiều cách để nói tự nhiên hơn." },
 };
 
+// 7 base icon modules (스피커/단어카드/글자타일/문장카드/빈칸/체크/연결선) —
+// reused across every micro-banner instead of 15 bespoke icons.
+function ModIcon({ kind, size = 14 }) {
+  const common = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2.3, strokeLinecap: "round", strokeLinejoin: "round" };
+  switch (kind) {
+    case "speaker": return <svg {...common}><polygon points="4 8 8 8 12 4 12 20 8 16 4 16" fill="currentColor" stroke="none" /><path d="M16 8a5 5 0 0 1 0 8" /><path d="M18.5 5.5a9 9 0 0 1 0 13" /></svg>;
+    case "word": return <svg {...common}><rect x="2" y="7" width="20" height="10" rx="2" /><line x1="6" y1="12" x2="18" y2="12" /></svg>;
+    case "tile": return <svg {...common}><rect x="5" y="4" width="14" height="16" rx="2" /><line x1="9" y1="12" x2="15" y2="12" /></svg>;
+    case "sentence": return <svg {...common}><rect x="2" y="5" width="20" height="14" rx="2" /><line x1="6" y1="10" x2="18" y2="10" /><line x1="6" y1="14.5" x2="14" y2="14.5" /></svg>;
+    case "blank": return <svg {...common}><line x1="3" y1="9" x2="21" y2="9" /><line x1="8" y1="16" x2="16" y2="16" /><line x1="8" y1="16" x2="8" y2="13" /><line x1="16" y1="16" x2="16" y2="13" /></svg>;
+    case "check": return <svg {...common}><circle cx="12" cy="12" r="9" /><path d="M8 12.5l2.5 2.5L16 9" /></svg>;
+    case "link": return <svg {...common}><path d="M17 3a2 2 0 0 1 2 2v2M17 21a2 2 0 0 0 2-2v-2M7 3a2 2 0 0 0-2 2v2M7 21a2 2 0 0 1-2-2v-2" /><line x1="9" y1="12" x2="15" y2="12" /></svg>;
+    default: return null;
+  }
+}
+
+const MICRO_ICON = {
+  "vi-to-ko": "check", "listen-choice": "speaker", "listen-pick-audio": "word", "match-pairs": "link",
+  "phrase-blank": "blank", "sentence-blank": "blank", "listen-blank": "speaker", "vi-blank": "tile",
+  blank: "blank", translate: "check", construct: "word", word: "word", char: "tile",
+  listenWord: "speaker", listenChar: "speaker",
+};
+
 const MICRO_GUIDE = {
   "vi-to-ko": { ko: "그림과 뜻을 보고 한국어 단어를 짐작해봐요.", vi: "Nhìn hình và nghĩa để đoán từ tiếng Hàn." },
   "listen-choice": { ko: "이번엔 귀로 확인해요. 소리를 듣고 단어를 찾아봐요.", vi: "Lần này nghe bằng tai nhé. Nghe rồi tìm từ đúng." },
@@ -729,6 +752,7 @@ function MicroBanner({ typeKey, onDismiss }) {
   return (
     <div className="micro-banner">
       <button type="button" className="x" aria-label="닫기" onClick={onDismiss}>✕</button>
+      <div className="micro-banner-icon"><ModIcon kind={MICRO_ICON[typeKey]} size={13} /></div>
       <p className="ko">{pick(lang, copy.ko, copy.vi)}</p>
       {lang === "ko" && <p className="vi">{copy.vi}</p>}
     </div>
