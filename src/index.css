@@ -82,7 +82,7 @@
 .listen-type-actions .secondary-button{flex:1;margin:0}
 .hint-fab{width:44px;height:44px;flex:0 0 auto;border:1px solid var(--line);border-radius:50%;background:#fff;color:var(--amber);display:grid;place-items:center;cursor:pointer}
 .single-blank-line{min-height:26px;margin:4px auto 20px;padding-bottom:8px;width:fit-content;min-width:55%;max-width:100%;border-bottom:2px solid var(--teal);text-align:center;font-size:16px;font-weight:850;color:var(--teal-dark);letter-spacing:.03em}
-.mode-hint-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px}
+.mode-hint-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:36px}
 .mode-hint-row .input-toggle{display:flex;justify-content:center;gap:22px;margin:0}
 .speak-blank-box{display:flex;align-items:center;justify-content:center;gap:20px;padding:16px 20px;margin:4px 0 22px;border:1px solid var(--teal);border-radius:14px;background:#fff}
 .speak-blank-box .speak-blank-icon{flex:0 0 auto;width:38px;height:38px;border:0;border-radius:50%;background:var(--teal);color:#fff;display:grid;place-items:center;cursor:pointer}
