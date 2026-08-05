@@ -1028,10 +1028,14 @@ function VocabStage({ patchSession, onComplete, onBack }) {
 // grammar sentence-building steps and the vocab blank-fill/spelling steps
 // ---------------------------------------------------------------------
 function ModeToggle({ mode, setMode }) {
+  // shows only the switch-TO option — tapping it flips the mode and the
+  // button relabels itself to whichever mode is now available to switch to
+  const next = mode === "tile" ? "keyboard" : "tile";
   return (
-    <div className="input-toggle" role="tablist" aria-label="입력 방식">
-      <button type="button" role="tab" aria-selected={mode === "tile"} onClick={() => setMode("tile")}>글자 사용하기</button>
-      <button type="button" role="tab" aria-selected={mode === "keyboard"} onClick={() => setMode("keyboard")}>키보드 사용하기</button>
+    <div className="input-toggle">
+      <button type="button" onClick={() => setMode(next)}>
+        {next === "tile" ? "글자 사용하기" : "키보드 사용하기"}
+      </button>
     </div>
   );
 }
