@@ -123,14 +123,6 @@ export const SESSION1 = {
         chars: ["저", "는", "회", "사", "원", "이", "아", "니", "에", "요"],
       },
       translateDistractor: "저는 회사원이에요.",
-      practiceItems: [
-        { lead: "안녕하세요? 저는", name: "민호", suffix: "예요" },
-        { lead: "만나서 반가워요. 저는", name: "하이", suffix: "예요" },
-        { lead: "안녕하세요? 저는", name: "유키", suffix: "예요" },
-        { lead: "만나서 반가워요. 저는", name: "수현", suffix: "이에요" },
-        { lead: "안녕하세요? 저는", name: "미라", suffix: "예요" },
-        { lead: "만나서 반가워요. 저는", name: "준영", suffix: "이에요" },
-      ],
     },
   },
   listening: {
@@ -198,6 +190,7 @@ export function defaultSessionState() {
     vocabTouched: [],
     dobiraSeen: { vocab: false, grammar: false },
     vocabFlow: "wordbook",
+    pronIndex: null,
     grammar: { attempts: 0, passed: false, retry: false, selected: "", view: "teach", teachStep: "text", videoDone: false },
     listening: { attempts: 0, listened: false, passed: false, selected: "" },
     reading: { attempts: 0, passed: false, selected: "" },

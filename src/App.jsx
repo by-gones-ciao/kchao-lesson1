@@ -441,7 +441,7 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
           )
         ) : session.stage === "context" && session.vocabFlow === "wordbook" ? (
           <div className="grammar-choice-footer">
-            <button type="button" className="active" onClick={() => patchSession({ vocabFlow: "intro" })}>선생님 설명 보기</button>
+            <button type="button" className="active" onClick={() => patchSession({ pronIndex: 0 })}>단어 발음하기</button>
             <button type="button" onClick={goNext}>바로 문제 풀기</button>
           </div>
         ) : (
@@ -590,7 +590,8 @@ function PronunciationModal({ words, index, onClose, onNext }) {
 
 function ContextStage({ session, patchSession }) {
   const c = SESSION1.context;
-  const [pronIndex, setPronIndex] = useState(null);
+  const pronIndex = session.pronIndex ?? null;
+  const setPronIndex = (i) => patchSession({ pronIndex: i });
   const [tab, setTab] = useState("all");
 
   if (session.vocabFlow === "intro") {
@@ -1162,8 +1163,6 @@ function GrammarSentenceQuiz({ data, onAllDone, onExit }) {
     listenWord: "문장을 듣고 단어를 배열하세요.",
     listenChar: "문장을 듣고 글자를 배열하세요.",
   };
-  const practiceItems = data.practiceItems || [];
-  const practiceEnd = STEPS.length + practiceItems.length;
   const [step, setStep] = useState(0);
   const [selected, setSelected] = useState(null);
   const [wrongKinds, setWrongKinds] = useState([]);
@@ -1171,12 +1170,10 @@ function GrammarSentenceQuiz({ data, onAllDone, onExit }) {
   const [banner, setBanner] = useState(STEPS[0]);
   const prevKind = useRef(STEPS[0]);
 
-  const inPractice = step >= STEPS.length && step < practiceEnd;
-  const practiceIndex = step - STEPS.length;
-  const inRetry = step >= practiceEnd;
-  const retryIndex = step - practiceEnd;
+  const inRetry = step >= STEPS.length;
+  const retryIndex = step - STEPS.length;
   const kind = inRetry ? retryKinds?.[retryIndex] : STEPS[step];
-  const totalSteps = practiceEnd + (retryKinds?.length ?? 0);
+  const totalSteps = STEPS.length + (retryKinds?.length ?? 0);
 
   useEffect(() => {
     setSelected(null);
@@ -1224,9 +1221,7 @@ function GrammarSentenceQuiz({ data, onAllDone, onExit }) {
         <button type="button" className="pron-close" aria-label="문제 건너뛰기" onClick={onAllDone}><XCircle size={26} /></button>
       </div>
 
-      {inPractice && <PracticeSpeakingItem item={practiceItems[practiceIndex]} onDone={advance} />}
-
-      {!inPractice && kind && (
+      {kind && (
         <>
       {inRetry && <div className="stage-kicker retry-kicker">오답 다시 풀기 · {retryIndex + 1}/{retryKinds.length}</div>}
       {banner === kind && <MicroBanner typeKey={kind} onDismiss={() => setBanner(null)} />}
@@ -1308,71 +1303,6 @@ function GrammarSentenceQuiz({ data, onAllDone, onExit }) {
         이 문제 건너뛰기
       </button>
     </div>
-  );
-}
-
-function PracticeSpeakingItem({ item, onDone }) {
-  const [phase, setPhase] = useState("record");
-  const [score, setScore] = useState(null);
-  const [recording, setRecording] = useState(false);
-  const mediaRef = useRef(null);
-  const sentence = `${item.lead} ${item.name}${item.suffix}.`;
-
-  useEffect(() => { setPhase("record"); setScore(null); }, [item]);
-
-  const finishWithScore = () => {
-    setScore(Math.floor(Math.random() * 41) + 50);
-    setPhase("result");
-  };
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const rec = new MediaRecorder(stream);
-      rec.onstop = () => { stream.getTracks().forEach((t) => t.stop()); finishWithScore(); };
-      mediaRef.current = rec;
-      rec.start();
-      setRecording(true);
-      setTimeout(() => { if (rec.state === "recording") rec.stop(); setRecording(false); }, 2500);
-    } catch {
-      finishWithScore();
-    }
-  };
-  const retry = () => { setPhase("record"); setScore(null); };
-
-  return (
-    <>
-      <p className="pron-title">실전 · 주어진 말을 빈칸에 넣어서 말해보세요.</p>
-      <div className="practice-fill-box">
-        <p>{item.lead} <span className="blank-slot">____</span>{item.suffix}.</p>
-        <span className="practice-fill-tag">{item.name}</span>
-      </div>
-      <div className="pron-word-card">
-        <button type="button" className="pron-speak" aria-label="문장 듣기" onClick={() => speakKo(sentence)}>
-          <SpeakerIcon size={20} />
-        </button>
-        <div><strong>{sentence}</strong></div>
-      </div>
-      {phase === "record" ? (
-        <div className="pron-record-area">
-          <button type="button" className={`record-button ${recording ? "recording" : ""}`} aria-label="발음 녹음" onClick={startRecording}>
-            <MicIcon size={26} />
-          </button>
-          <small>{recording ? "녹음 중이에요…" : "버튼을 눌러 문장을 녹음하세요."}</small>
-        </div>
-      ) : (
-        <div className="pron-score-sheet">
-          <div className="pron-score-row">
-            <span><ScoreBarsIcon size={18} /> 발음점수 <strong>{score}점</strong></span>
-            <button type="button" className="pron-detail">상세보기 <ChevronRight size={14} /></button>
-          </div>
-          <p>다음 문장을 연습해 보세요.</p>
-          <div className="pron-score-actions">
-            <button type="button" className="secondary-button" onClick={retry}>다시하기</button>
-            <button type="button" className="primary-button" onClick={onDone}>다음</button>
-          </div>
-        </div>
-      )}
-    </>
   );
 }
 
