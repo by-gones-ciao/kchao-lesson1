@@ -696,27 +696,23 @@ function shuffle(arr) {
   return a;
 }
 
-const VOCAB_TYPES = ["vi-to-ko", "listen-choice", "listen-pick-audio", "match-pairs", "phrase-blank", "sentence-blank", "listen-blank", "vi-blank"];
+const VOCAB_TYPES = ["vi-to-ko", "listen-choice", "listen-pick-audio", "match-pairs", "listen-blank", "vi-blank"];
 
 function buildQuestionForWord(w, type, words) {
   const koPool = words.map((o) => o.ko);
-  const countryPool = words.filter((o) => !!FLAG_COMPONENT[o.ko] && !o.ko.includes("사람")).map((o) => o.ko);
   const charPool = [...new Set(words.flatMap((o) => o.ko.split("")))];
   const hasFlag = !!FLAG_COMPONENT[w.ko];
-  const isCountry = hasFlag && !w.ko.includes("사람");
   if ((type === "vi-to-ko" || type === "vi-blank" || type === "listen-pick-audio" || type === "match-pairs") && !hasFlag) type = "listen-choice";
-  if ((type === "phrase-blank" || type === "sentence-blank") && !isCountry) type = "listen-choice";
   const distractorsKo = shuffle(koPool.filter((k) => k !== w.ko)).slice(0, 3);
   const blankIndex = Math.floor(Math.random() * w.ko.length);
   const correctChar = w.ko[blankIndex];
   const charDistractors = shuffle(charPool.filter((c) => c !== correctChar)).slice(0, 3);
-  const countryDistractors = shuffle(countryPool.filter((c) => c !== w.ko)).slice(0, 3);
   let pairs = null;
   if (type === "match-pairs") {
     const rest = words.filter((o) => o.ko !== w.ko);
     pairs = shuffle([w, ...shuffle(rest).slice(0, 5)]);
   }
-  return { id: `${w.ko}-retry`, word: w, type, distractorsKo, blankIndex, correctChar, charDistractors, countryDistractors, pairs };
+  return { id: `${w.ko}-retry`, word: w, type, distractorsKo, blankIndex, correctChar, charDistractors, pairs };
 }
 
 function buildQuizQuestions(words) {
@@ -888,8 +884,6 @@ const QUIZ_PROMPTS = {
   "listen-choice": "소리를 듣고 단어를 고르세요",
   "listen-pick-audio": "단어를 보고 알맞은 소리를 고르세요",
   "match-pairs": "단어의 짝을 맞춰 보세요",
-  "phrase-blank": "빈칸에 알맞은 나라를 넣으세요",
-  "sentence-blank": "빈칸에 알맞은 나라를 넣으세요",
   "listen-blank": "소리를 듣고 빈칸을 채우세요",
   "vi-blank": "그림에 맞는 단어를 직접 완성하세요",
 };
@@ -944,7 +938,7 @@ function MatchPairsQuestion({ pairs, onDone }) {
 }
 
 // single-blank fill: word-tile pool (with 글자/키보드 toggle + hint) or plain
-// keyboard entry, used for the "phrase-blank" / "sentence-blank" vocab types
+// keyboard entry, used for the "listen-blank" vocab type
 function BlankChoiceQuestion({ prefix, suffix, answer, distractors, advance, onWrong, speaker }) {
   const [selected, setSelected] = useState(null);
   const [mode, setMode] = useState("tile");
@@ -1113,16 +1107,6 @@ function VocabStage({ patchSession, onComplete, onBack }) {
         <MatchPairsQuestion pairs={q.pairs} onDone={advance} />
       )}
 
-      {q.type === "phrase-blank" && (
-        <BlankChoiceQuestion prefix="" suffix=" 사람" answer={q.word.ko} distractors={q.countryDistractors}
-          advance={advance} speaker={() => speakKo(q.word.ko)} onWrong={markWrong} />
-      )}
-
-      {q.type === "sentence-blank" && (
-        <BlankChoiceQuestion prefix="저는 " suffix=" 사람이에요" answer={q.word.ko} distractors={q.countryDistractors}
-          advance={advance} speaker={() => speakKo(q.word.ko)} onWrong={markWrong} />
-      )}
-
       {q.type === "listen-blank" && (
         <BlankChoiceQuestion prefix={q.word.ko.slice(0, q.blankIndex)} suffix={q.word.ko.slice(q.blankIndex + 1)}
           answer={q.correctChar} distractors={q.charDistractors} advance={advance} speaker={() => speakKo(q.word.ko)} onWrong={markWrong} />
@@ -1270,14 +1254,11 @@ function SentenceBuilder({ targetTokens, poolExtra, joinWith = "", onDone, onWro
 // grammar sentence quiz — 7-step exercise sequence ("문제 풀기")
 // ---------------------------------------------------------------------
 function GrammarSentenceQuiz({ data, onAllDone, onExit }) {
-  const { lang } = useLang();
-  const STEPS = ["blank", "translate", "construct", "word", "char", "listenWord", "listenChar"];
+  const STEPS = ["blank", "translate", "construct", "listenWord", "listenChar"];
   const PROMPTS = {
     blank: "빈칸에 들어갈 말을 선택하세요",
     translate: "올바른 한국어 문장을 고르세요.",
     construct: "다음 문장을 해석하세요.",
-    word: "단어를 배열해 문장을 완성하세요.",
-    char: "글자를 배열해 문장을 완성하세요.",
     listenWord: "문장을 듣고 단어를 배열하세요.",
     listenChar: "문장을 듣고 글자를 배열하세요.",
   };
@@ -1374,22 +1355,6 @@ function GrammarSentenceQuiz({ data, onAllDone, onExit }) {
           <div className="quiz-prompt-box">{data.positive.vi}</div>
           <SentenceBuilder targetTokens={data.positive.words} joinWith=" "
             poolExtra={data.positive.wordDistractors} onDone={advance} onWrong={() => addWrong("construct")} />
-        </>
-      )}
-
-      {kind === "word" && (
-        <>
-          {lang === "vi" && <p className="vi-copy sentence-vi">{data.target.vi}</p>}
-          <SentenceBuilder targetTokens={data.target.words} joinWith=" "
-            poolExtra={data.target.wordDistractors} onDone={advance} onWrong={() => addWrong("word")} />
-        </>
-      )}
-
-      {kind === "char" && (
-        <>
-          {lang === "vi" && <p className="vi-copy sentence-vi">{data.target.vi}</p>}
-          <SentenceBuilder targetTokens={data.target.chars} joinWith=""
-            poolExtra={[]} onDone={advance} onWrong={() => addWrong("char")} />
         </>
       )}
 
@@ -1860,14 +1825,6 @@ function RetryStage({ session, patchSession, onDone }) {
           </div>
         </>
       )}
-      {item.source === "vocab" && vq.type === "phrase-blank" && (
-        <><p className="pron-title">빈칸에 알맞은 나라를 넣으세요</p>
-          <BlankChoiceQuestion prefix="" suffix=" 사람" answer={vq.word.ko} distractors={vq.countryDistractors} advance={advance} speaker={() => speakKo(vq.word.ko)} /></>
-      )}
-      {item.source === "vocab" && vq.type === "sentence-blank" && (
-        <><p className="pron-title">빈칸에 알맞은 나라를 넣으세요</p>
-          <BlankChoiceQuestion prefix="저는 " suffix=" 사람이에요" answer={vq.word.ko} distractors={vq.countryDistractors} advance={advance} speaker={() => speakKo(vq.word.ko)} /></>
-      )}
       {item.source === "vocab" && vq.type === "listen-blank" && (
         <><p className="pron-title">소리를 듣고 빈칸을 채우세요</p>
           <BlankChoiceQuestion prefix={vq.word.ko.slice(0, vq.blankIndex)} suffix={vq.word.ko.slice(vq.blankIndex + 1)}
@@ -1908,14 +1865,6 @@ function RetryStage({ session, patchSession, onDone }) {
         <><p className="pron-title">다음 문장을 해석하세요.</p><div className="quiz-prompt-box">{g.positive.vi}</div>
           <SentenceBuilder targetTokens={g.positive.words} joinWith=" " poolExtra={g.positive.wordDistractors} onDone={advance} onWrong={() => {}} /></>
       )}
-      {item.source === "grammar" && item.kind === "word" && (
-        <><p className="pron-title">단어를 배열해 문장을 완성하세요.</p>
-          <SentenceBuilder targetTokens={g.target.words} joinWith=" " poolExtra={g.target.wordDistractors} onDone={advance} onWrong={() => {}} /></>
-      )}
-      {item.source === "grammar" && item.kind === "char" && (
-        <><p className="pron-title">글자를 배열해 문장을 완성하세요.</p>
-          <SentenceBuilder targetTokens={g.target.chars} joinWith="" poolExtra={[]} onDone={advance} onWrong={() => {}} /></>
-      )}
       {item.source === "grammar" && item.kind === "listenWord" && (
         <><p className="pron-title">문장을 듣고 단어를 배열하세요.</p>
           <SentenceBuilder targetTokens={g.target.words} joinWith=" " speaker={() => speakKo(g.target.ko)} poolExtra={g.target.wordDistractors} onDone={advance} onWrong={() => {}} /></>
@@ -1950,7 +1899,7 @@ function LearningReportStage({ session, state, meta, patchSession }) {
       <section className="report-stats" aria-label="학습 결과 지표">
         <div className="report-stat"><BookIcon size={22} /><span>학습 어휘</span><strong>{SESSION1.context.words.length}개</strong></div>
         <div className="report-stat"><MicIcon size={22} /><span>발음평가</span><strong>{speakingCount}/{speakingCount}</strong></div>
-        <div className="report-stat"><CheckCircle size={22} /><span>확인 문제</span><strong>7/7</strong></div>
+        <div className="report-stat"><CheckCircle size={22} /><span>확인 문제</span><strong>5/5</strong></div>
       </section>
 
       <section className="report-actions" aria-label="다시 보기">
