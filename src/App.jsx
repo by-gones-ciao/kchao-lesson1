@@ -437,14 +437,8 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
           session.grammar.speakingDone ? (
             <button type="button" className="primary-button" onClick={goNext}>다음<ArrowRight /></button>
           ) : (
-            <div className="speak-tool-dock">
-              <button type="button" aria-label="키보드" className={session.grammar.speakingMode === "keyboard" ? "active" : ""}
-                onClick={() => patchSession((prev) => ({
-                  grammar: { ...prev.grammar, speakingMode: prev.grammar.speakingMode === "keyboard" ? "voice" : "keyboard" },
-                }))}>
-                <KeyboardIcon size={20} />
-              </button>
-              <button type="button" className="speak-mic" aria-label={session.grammar.speakingMode === "keyboard" ? "확인" : "마이크"}
+            <div className="speak-footer-wrap">
+              <button type="button" className="quiz-skip-btn"
                 onClick={() => patchSession((prev) => {
                   const isLast = prev.grammar.speakingIndex >= SESSION1.grammar.speakingOutput.practiceScreens.length - 1;
                   return {
@@ -455,15 +449,36 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
                     },
                   };
                 })}>
-                {session.grammar.speakingMode === "keyboard" ? <CheckCircle size={24} /> : <MicIcon size={24} />}
+                이 문제 건너뛰기
               </button>
-              <button type="button" className="speak-hint" aria-label="힌트"
-                onClick={() => {
-                  patchSession((prev) => ({ grammar: { ...prev.grammar, hintReveal: true } }));
-                  setTimeout(() => patchSession((prev) => ({ grammar: { ...prev.grammar, hintReveal: false } })), 3000);
-                }}>
-                <LightbulbIcon size={18} />
-              </button>
+              <div className="speak-tool-dock">
+                <button type="button" aria-label="키보드" className={session.grammar.speakingMode === "keyboard" ? "active" : ""}
+                  onClick={() => patchSession((prev) => ({
+                    grammar: { ...prev.grammar, speakingMode: prev.grammar.speakingMode === "keyboard" ? "voice" : "keyboard" },
+                  }))}>
+                  <KeyboardIcon size={20} />
+                </button>
+                <button type="button" className="speak-mic" aria-label={session.grammar.speakingMode === "keyboard" ? "확인" : "마이크"}
+                  onClick={() => patchSession((prev) => {
+                    const isLast = prev.grammar.speakingIndex >= SESSION1.grammar.speakingOutput.practiceScreens.length - 1;
+                    return {
+                      grammar: {
+                        ...prev.grammar,
+                        speakingIndex: isLast ? prev.grammar.speakingIndex : prev.grammar.speakingIndex + 1,
+                        speakingDone: isLast,
+                      },
+                    };
+                  })}>
+                  {session.grammar.speakingMode === "keyboard" ? <CheckCircle size={24} /> : <MicIcon size={24} />}
+                </button>
+                <button type="button" className="speak-hint" aria-label="힌트"
+                  onClick={() => {
+                    patchSession((prev) => ({ grammar: { ...prev.grammar, hintReveal: true } }));
+                    setTimeout(() => patchSession((prev) => ({ grammar: { ...prev.grammar, hintReveal: false } })), 3000);
+                  }}>
+                  <LightbulbIcon size={18} />
+                </button>
+              </div>
             </div>
           )
         ) : session.stage === "retry" && session.retryFlow === "intro" ? (
