@@ -397,7 +397,9 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
         <CertificateIcon size={24} className="header-mark" />
       </header>
       <div className="learning-progress-wrap">
-        <div className="lang-toggle-row"><LangToggle /></div>
+        {!(session.stage === "context" && session.contextFlow === "wordbook" && session.vocabFlow === "wordbook") && (
+          <div className="lang-toggle-row"><LangToggle /></div>
+        )}
         <div className="stage-bars" aria-label={`${stageIndex + 1}/${stageOrder.length}단계`}>
           <span style={{ width: `${((stageIndex + 1) / stageOrder.length) * 100}%` }} />
         </div>
@@ -411,36 +413,40 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
         {session.stage === "grammar" && <GrammarStage session={session} patchSession={patchSession} />}
       </main>
       <footer className="learning-footer">
-        {stageIndex === stageOrder.length - 1 && canProceed ? (
-          session.completed ? (
-            <button type="button" className="primary-button" onClick={() => setView("home")}>홈으로 돌아가기<ArrowRight /></button>
-          ) : (
-            <button type="button" className="primary-button" onClick={() => { finishSession(); setView("home"); }}>차시 완료하고 홈으로 돌아가기<CheckCircle /></button>
-          )
-        ) : session.stage === "grammar" && !session.grammar.passed
-          && session.grammar.view === "teach" && (session.grammar.teachStep || "text") === "text" ? (
+        {session.stage === "grammar" && session.grammar.view === "teachIntro" ? (
+          <button type="button" className="primary-button"
+            onClick={() => patchSession((prev) => ({ grammar: { ...prev.grammar, view: "teach" } }))}>시작하기<ArrowRight /></button>
+        ) : session.stage === "grammar" && !session.grammar.passed && session.grammar.view === "teach" ? (
           <div className="grammar-choice-footer">
             <button type="button" className="active"
-              onClick={() => patchSession((prev) => ({ grammar: { ...prev.grammar, view: "teach", teachStep: "video" } }))}>문법 영상 보기</button>
+              onClick={() => patchSession((prev) => ({ grammar: { ...prev.grammar, view: "videoIntro" } }))}>문법 영상 보기</button>
             <button type="button"
-              onClick={() => patchSession((prev) => ({ grammar: { ...prev.grammar, view: "intro" } }))}>바로 문제 풀기</button>
+              onClick={() => patchSession((prev) => ({ grammar: { ...prev.grammar, view: "quizIntro" } }))}>바로 문제 풀기</button>
           </div>
-        ) : session.stage === "grammar" && !session.grammar.passed
-          && session.grammar.view === "teach" && session.grammar.teachStep === "video" ? (
+        ) : session.stage === "grammar" && session.grammar.view === "videoIntro" ? (
+          <button type="button" className="primary-button"
+            onClick={() => patchSession((prev) => ({ grammar: { ...prev.grammar, view: "video" } }))}>시작하기<ArrowRight /></button>
+        ) : session.stage === "grammar" && session.grammar.view === "video" ? (
           session.grammar.videoDone ? (
             <button type="button" className="primary-button"
-              onClick={() => patchSession((prev) => ({ grammar: { ...prev.grammar, view: "intro" } }))}>문제 풀기<ArrowRight /></button>
+              onClick={() => patchSession((prev) => ({ grammar: { ...prev.grammar, view: "quizIntro" } }))}>문제 풀기<ArrowRight /></button>
           ) : (
             <p className="footer-hint-text">영상을 끝까지 보면 다음으로 넘어갈 수 있어요.</p>
           )
+        ) : session.stage === "grammar" && session.grammar.view === "quizIntro" ? (
+          <button type="button" className="primary-button"
+            onClick={() => patchSession((prev) => ({ grammar: { ...prev.grammar, view: "quiz" } }))}>시작하기<ArrowRight /></button>
+        ) : session.stage === "grammar" && session.grammar.view === "speakingIntro" ? (
+          <button type="button" className="primary-button"
+            onClick={() => patchSession((prev) => ({ grammar: { ...prev.grammar, view: "speaking" } }))}>시작하기<ArrowRight /></button>
         ) : session.stage === "grammar" && session.grammar.view === "speaking" ? (
           session.grammar.speakingDone ? (
             <button type="button" className="primary-button"
-              onClick={() => patchSession((prev) => ({ grammar: { ...prev.grammar, view: "teach", teachStep: "text" } }))}>다음<ArrowRight /></button>
+              onClick={() => patchSession((prev) => ({ grammar: { ...prev.grammar, view: "teach" } }))}>다음<ArrowRight /></button>
           ) : (
             <div className="speak-output-footer">
               <button type="button" className="secondary-button skip-button"
-                onClick={() => patchSession((prev) => ({ grammar: { ...prev.grammar, view: "teach", teachStep: "text" } }))}>건너뛰기</button>
+                onClick={() => patchSession((prev) => ({ grammar: { ...prev.grammar, view: "teach" } }))}>건너뛰기</button>
               <div className="speak-tool-dock">
                 <button type="button" aria-label="키보드"><KeyboardIcon size={20} /></button>
                 <button type="button" className="speak-mic" aria-label="마이크"
@@ -451,11 +457,26 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
               </div>
             </div>
           )
+        ) : session.stage === "context" && session.contextFlow === "intro" ? (
+          <button type="button" className="primary-button"
+            onClick={() => patchSession({ contextFlow: "wordbook" })}>시작하기<ArrowRight /></button>
+        ) : session.stage === "context" && session.vocabFlow === "intro" ? (
+          <button type="button" className="primary-button"
+            onClick={() => patchSession((prev) => ({
+              vocabFlow: "wordbook", stage: "vocab",
+              visited: prev.visited.includes("vocab") ? prev.visited : [...prev.visited, "vocab"],
+            }))}>시작하기<ArrowRight /></button>
         ) : session.stage === "context" && session.vocabFlow === "wordbook" ? (
           <div className="grammar-choice-footer">
             <button type="button" className="active" onClick={() => patchSession({ pronIndex: 0 })}>단어 발음하기</button>
-            <button type="button" onClick={goNext}>바로 문제 풀기</button>
+            <button type="button" onClick={() => patchSession({ vocabFlow: "intro" })}>바로 문제 풀기</button>
           </div>
+        ) : stageIndex === stageOrder.length - 1 && canProceed ? (
+          session.completed ? (
+            <button type="button" className="primary-button" onClick={() => setView("home")}>홈으로 돌아가기<ArrowRight /></button>
+          ) : (
+            <button type="button" className="primary-button" onClick={() => { finishSession(); setView("home"); }}>차시 완료하고 홈으로 돌아가기<CheckCircle /></button>
+          )
         ) : (
           <div className="footer-nav-row">
             {!canProceed && (
@@ -477,12 +498,9 @@ function MissionStage() {
   const { lang } = useLang();
   return (
     <div className="stage-section mission-stage">
-      <div className="stage-kicker"><InfoCircleIcon size={18} /> 학습 목표</div>
+      <div className="stage-kicker">1차시 학습 목표</div>
       <h2 className="mission-goal-text">{pick(lang, m.ko, m.vi)}</h2>
       <div className="mission-image"><img alt="오늘 학습 상황" src={LESSON.heroImage} /></div>
-      <div className="six-skill-note">
-        <p><strong>1차시에서는 나라와 국적 어휘를 배웁니다.</strong><span>이 어휘를 알아야 자기소개를 할 때 어느 나라 사람인지 말할 수 있습니다.</span></p>
-      </div>
     </div>
   );
 }
@@ -606,15 +624,18 @@ function ContextStage({ session, patchSession }) {
   const setPronIndex = (i) => patchSession({ pronIndex: i });
   const [tab, setTab] = useState("all");
 
+  if (session.contextFlow === "intro") {
+    return (
+      <div className="stage-section context-stage dobira-stage">
+        <DobiraCard kind="vocabWordbook" />
+      </div>
+    );
+  }
+
   if (session.vocabFlow === "intro") {
     return (
       <div className="stage-section context-stage dobira-stage">
-        <DobiraCard kind="vocab" onStart={() => patchSession((prev) => ({
-          dobiraSeen: { ...prev.dobiraSeen, vocab: true },
-          vocabFlow: "wordbook",
-          stage: "vocab",
-          visited: prev.visited.includes("vocab") ? prev.visited : [...prev.visited, "vocab"],
-        }))} />
+        <DobiraCard kind="vocab" />
       </div>
     );
   }
@@ -623,7 +644,7 @@ function ContextStage({ session, patchSession }) {
     <div className="stage-section context-stage">
       <span className="stage-kicker">오늘의 단어</span>
       <h2>나라와 국적</h2>
-      <p className="stage-lead">단어를 눌러 발음 평가도 진행해 보세요.</p>
+      <p className="stage-lead">다음 단어를 모두 학습한 후에 발음해 보세요.</p>
       <div className="wordbook-tabs" role="tablist" aria-label="단어장 보기 방식">
         <button type="button" role="tab" aria-selected={tab === "all"} onClick={() => setTab("all")}>전체 보기</button>
         <button type="button" role="tab" aria-selected={tab === "ko"} onClick={() => setTab("ko")}>한국어 보기</button>
@@ -698,24 +719,73 @@ function buildQuizQuestions(words) {
 // explaining *why* a stage/exercise-type exists rather than its difficulty
 // ---------------------------------------------------------------------
 const DOBIRA_COPY = {
+  vocabWordbook: {
+    badge: { ko: "오늘의 단어", vi: "Từ vựng hôm nay" },
+    icon: "book",
+    title: { ko: "나라와 국적 단어를 살펴봐요", vi: "Cùng xem các từ về quốc gia và quốc tịch" },
+    lead: { ko: "단어를 하나씩 눈으로 확인하고 소리 내어 읽어봐요.", vi: "Xem từng từ và đọc to lên nhé." },
+    quick: {
+      label: { ko: "학습 성과", vi: "Kết quả học tập" },
+      desc: { ko: "나라와 국적 단어 15개를 알아볼 수 있어요.", vi: "Bạn sẽ nhận biết được 15 từ về quốc gia và quốc tịch." },
+    },
+  },
   vocab: {
     badge: { ko: "오늘의 단어", vi: "Từ vựng hôm nay" },
     icon: "book",
-    title: { ko: "자기소개에 꼭 쓰는 단어를 배워요", vi: "Học những từ dùng khi tự giới thiệu" },
-    lead: { ko: "짐작 → 듣기 → 보기 → 쓰기 순서로 하나씩 연습하며 익혀요.", vi: "Luyện theo thứ tự: đoán – nghe – nhìn – viết." },
+    title: { ko: "배운 단어를 문제로 확인해요", vi: "Kiểm tra từ đã học qua bài tập" },
+    lead: { ko: "짐작 → 듣기 → 보기 → 쓰기 순서로 하나씩 연습해요.", vi: "Luyện theo thứ tự: đoán – nghe – nhìn – viết." },
     quick: {
       label: { ko: "학습 성과", vi: "Kết quả học tập" },
       desc: { ko: "나라와 국적 단어 15개를 자유롭게 쓸 수 있어요.", vi: "Bạn sẽ dùng thành thạo 15 từ về quốc gia và quốc tịch." },
     },
   },
+  grammarTeach: {
+    badge: { ko: "문법과 표현 1", vi: "Ngữ pháp & biểu hiện 1" },
+    icon: "note",
+    title: { ko: "저는 N이에요/예요 표현을 배워요", vi: "Học biểu hiện 저는 N이에요/예요" },
+    lead: { ko: "받침 유무에 따라 형태가 어떻게 바뀌는지 확인해요.", vi: "Xem hình thái thay đổi thế nào theo phụ âm cuối." },
+    quick: {
+      label: { ko: "학습 성과", vi: "Kết quả học tập" },
+      desc: { ko: "받침 유무에 따라 '이에요/예요'를 구분할 수 있어요.", vi: "Bạn sẽ phân biệt được '이에요/예요' theo phụ âm cuối." },
+    },
+  },
+  grammarVideo: {
+    badge: { ko: "문법과 표현 1", vi: "Ngữ pháp & biểu hiện 1" },
+    icon: "play",
+    title: { ko: "선생님 설명을 영상으로 볼게요", vi: "Xem video giải thích của giáo viên" },
+    lead: { ko: "짧은 영상으로 문법을 다시 한 번 정리해요.", vi: "Xem video ngắn để ôn lại ngữ pháp." },
+    quick: {
+      label: { ko: "학습 성과", vi: "Kết quả học tập" },
+      desc: { ko: "영상을 보고 문장 예시를 자연스럽게 이해해요.", vi: "Hiểu ví dụ câu một cách tự nhiên qua video." },
+    },
+  },
   grammar: {
     badge: { ko: "문법과 표현 1", vi: "Ngữ pháp & biểu hiện 1" },
     icon: "note",
-    title: { ko: "자기소개 문장을 자연스럽게 말해요", vi: "Nói câu tự giới thiệu một cách tự nhiên" },
-    lead: { ko: "여러 방식으로 반복 연습하면 생각하지 않아도 문장이 나와요.", vi: "Luyện nhiều cách để câu nói ra tự nhiên mà không cần suy nghĩ." },
+    title: { ko: "문법 내용을 잘 이해했는지 문제를 풀면서 확인해요.", vi: "Giải bài tập để kiểm tra đã hiểu ngữ pháp chưa." },
     quick: {
       label: { ko: "학습 성과", vi: "Kết quả học tập" },
-      desc: { ko: "'저는 OO이에요/예요' 문장을 자유자재로 만들 수 있어요.", vi: "Bạn sẽ tự tạo được câu '저는 OO이에요/예요'." },
+      desc: { ko: "'이에요/예요'를 구분하여 사용할 수 있어요.", vi: "Bạn sẽ dùng phân biệt được '이에요/예요'." },
+    },
+  },
+  speaking: {
+    badge: { ko: "실전평가", vi: "Đánh giá thực hành" },
+    icon: "mic",
+    title: { ko: "배운 문장을 직접 말해봐요", vi: "Tự nói câu đã học" },
+    lead: { ko: "빈칸을 채워 [보기]처럼 문장을 완성해서 말하세요.", vi: "Điền chỗ trống và nói câu hoàn chỉnh như [보기]." },
+    quick: {
+      label: { ko: "학습 성과", vi: "Kết quả học tập" },
+      desc: { ko: "이름과 국적을 넣어 자기소개 문장을 말할 수 있어요.", vi: "Bạn sẽ nói được câu tự giới thiệu với tên và quốc tịch." },
+    },
+  },
+  retry: {
+    badge: { ko: "오답 다시 풀기", vi: "Làm lại câu sai" },
+    icon: "check",
+    title: { ko: "틀린 문제를 다시 풀어봐요", vi: "Cùng làm lại những câu đã sai" },
+    lead: { ko: "최대 3문제까지 다시 연습하며 완전히 익혀요.", vi: "Luyện lại tối đa 3 câu để nắm chắc hơn." },
+    quick: {
+      label: { ko: "학습 성과", vi: "Kết quả học tập" },
+      desc: { ko: "헷갈렸던 부분을 확실하게 이해할 수 있어요.", vi: "Bạn sẽ hiểu rõ phần từng bị nhầm lẫn." },
     },
   },
 };
@@ -761,27 +831,27 @@ const MICRO_GUIDE = {
   listenChar: { ko: "들은 문장을 글자로 완성해요.", vi: "Nghe rồi ghép lại thành câu bằng chữ." },
 };
 
-function DobiraCard({ kind, onStart }) {
+// Purpose-guide "도비라" screen, shown before every activity step (except
+// the final 학습리포트). Navigation lives in the outer page footer as a
+// single 시작하기 button — this component is content-only.
+function DobiraCard({ kind }) {
   const { lang } = useLang();
   const copy = DOBIRA_COPY[kind];
   const t = (field) => pick(lang, field.ko, field.vi);
-  const Icon = copy.icon === "note" ? NoteIcon : BookIcon;
+  const DOBIRA_ICONS = { book: BookIcon, note: NoteIcon, mic: MicIcon, play: PlayCircleIcon, check: CheckCircle };
+  const Icon = DOBIRA_ICONS[copy.icon] || BookIcon;
   return (
     <div className="dobira-screen">
       <article className="dobira-card">
         <span className="dobira-badge">{t(copy.badge)}</span>
         <div className="dobira-icon"><Icon size={38} /></div>
         <h2>{t(copy.title)}</h2>
-        <p className="dobira-lead">{t(copy.lead)}</p>
+        {copy.lead && <p className="dobira-lead">{t(copy.lead)}</p>}
         <div className="dobira-quick">
           <CheckCircle size={22} />
           <span>{t(copy.quick.label)}<small>{t(copy.quick.desc)}</small></span>
         </div>
       </article>
-      <div className="dobira-footer">
-        <button type="button" className="dobira-skip" onClick={onStart}>건너뛰기</button>
-        <button type="button" className="dobira-start" onClick={onStart}>시작하기</button>
-      </div>
     </div>
   );
 }
@@ -931,13 +1001,10 @@ function VocabStage({ patchSession, onComplete, onBack }) {
   const questions = useMemo(() => buildQuizQuestions(words), [words]);
   const [qIndex, setQIndex] = useState(0);
   const [selected, setSelected] = useState(null);
-  const [banner, setBanner] = useState(questions[0].type);
-  const prevType = useRef(questions[0].type);
   const q = questions[qIndex];
 
   useEffect(() => {
     setSelected(null);
-    if (prevType.current !== q.type) { setBanner(q.type); prevType.current = q.type; }
     if (q.type === "listen-choice" || q.type === "listen-blank") speakKo(q.word.ko);
   }, [qIndex]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -968,7 +1035,6 @@ function VocabStage({ patchSession, onComplete, onBack }) {
         <div className="pron-progress"><span style={{ width: `${pct}%` }} /></div>
         <button type="button" className="pron-close" aria-label="퀴즈 건너뛰기" onClick={finish}><XCircle size={26} /></button>
       </div>
-      {banner === q.type && <MicroBanner typeKey={q.type} onDismiss={() => setBanner(null)} />}
       <p className="pron-title">{QUIZ_PROMPTS[q.type]}</p>
 
       {q.type === "vi-to-ko" && (
@@ -1207,8 +1273,7 @@ function GrammarSentenceQuiz({ data, onAllDone, onExit }) {
   const [selected, setSelected] = useState(null);
   const [wrongKinds, setWrongKinds] = useState([]);
   const [retryKinds, setRetryKinds] = useState(null);
-  const [banner, setBanner] = useState(STEPS[0]);
-  const prevKind = useRef(STEPS[0]);
+  const [retryIntroDone, setRetryIntroDone] = useState(false);
 
   const inRetry = step >= STEPS.length;
   const retryIndex = step - STEPS.length;
@@ -1217,7 +1282,6 @@ function GrammarSentenceQuiz({ data, onAllDone, onExit }) {
 
   useEffect(() => {
     setSelected(null);
-    if (kind && prevKind.current !== kind) { setBanner(kind); prevKind.current = kind; }
     if (step === STEPS.length && retryKinds === null) {
       setRetryKinds([...new Set(wrongKinds)].slice(0, 3));
     }
@@ -1261,10 +1325,14 @@ function GrammarSentenceQuiz({ data, onAllDone, onExit }) {
         <button type="button" className="pron-close" aria-label="문제 건너뛰기" onClick={onAllDone}><XCircle size={26} /></button>
       </div>
 
-      {kind && (
+      {inRetry && !retryIntroDone ? (
+        <>
+          <DobiraCard kind="retry" />
+          <button type="button" className="primary-button" onClick={() => setRetryIntroDone(true)}>시작하기<ArrowRight /></button>
+        </>
+      ) : kind && (
         <>
       {inRetry && <div className="stage-kicker retry-kicker">오답 다시 풀기 · {retryIndex + 1}/{retryKinds.length}</div>}
-      {banner === kind && <MicroBanner typeKey={kind} onDismiss={() => setBanner(null)} />}
       <p className="pron-title">{PROMPTS[kind]}</p>
 
       {kind === "blank" && (
@@ -1349,30 +1417,27 @@ function GrammarSentenceQuiz({ data, onAllDone, onExit }) {
 function GrammarStage({ session, patchSession }) {
   const g = SESSION1.grammar;
   const view = session.grammar.view;
-  const teachStep = session.grammar.teachStep || "text";
   const { lang } = useLang();
   const videoRef = useRef(null);
 
   useEffect(() => {
-    if (view === "teach" && teachStep === "video" && videoRef.current) {
+    if (view === "video" && videoRef.current) {
       videoRef.current.requestFullscreen?.().catch(() => {});
     }
-  }, [view, teachStep]);
+  }, [view]);
 
-  if (view === "intro") {
+  if (view === "teachIntro" || view === "videoIntro" || view === "quizIntro" || view === "speakingIntro") {
+    const kind = view === "videoIntro" ? "grammarVideo" : view === "quizIntro" ? "grammar" : view === "speakingIntro" ? "speaking" : "grammarTeach";
     return (
       <div className="stage-section grammar-stage dobira-stage">
-        <DobiraCard kind="grammar" onStart={() => patchSession((prev) => ({
-          dobiraSeen: { ...prev.dobiraSeen, grammar: true },
-          grammar: { ...prev.grammar, view: "quiz" },
-        }))} />
+        <DobiraCard kind={kind} />
       </div>
     );
   }
 
   return (
     <div className="stage-section grammar-stage">
-      {view === "teach" && teachStep === "video" && (
+      {view === "video" && (
         <div className="video-block">
           <div className="media-label">선생님 설명</div>
           <video ref={videoRef} src="/media/lesson1-guide.mp4" poster="/assets/tutor.jpg" controls playsInline preload="metadata" autoPlay
@@ -1386,7 +1451,7 @@ function GrammarStage({ session, patchSession }) {
         </div>
       )}
 
-      {view === "teach" && teachStep === "text" && (
+      {view === "teach" && (
         <>
           <div className="grammar-hero">
             <div>
@@ -1427,8 +1492,8 @@ function GrammarStage({ session, patchSession }) {
       {view === "quiz" && (
         <GrammarSentenceQuiz
           data={g.sentenceQuiz}
-          onAllDone={() => patchSession((prev) => ({ grammar: { ...prev.grammar, passed: true, view: "speaking", speakingDone: false } }))}
-          onExit={() => patchSession((prev) => ({ grammar: { ...prev.grammar, view: "intro" } }))}
+          onAllDone={() => patchSession((prev) => ({ grammar: { ...prev.grammar, passed: true, view: "speakingIntro", speakingDone: false } }))}
+          onExit={() => patchSession((prev) => ({ grammar: { ...prev.grammar, view: "quizIntro" } }))}
         />
       )}
 

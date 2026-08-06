@@ -125,7 +125,7 @@
 .session-ring{width:26px;height:26px;flex:0 0 auto;border-radius:50%;display:grid;place-items:center}
 .session-ring-hole{width:19px;height:19px;border-radius:50%;background:#fff;display:grid;place-items:center}
 .session-ring-hole span{font-size:6px;font-weight:850;color:var(--teal-dark);line-height:1}
-.mission-goal-text{font-size:20px!important;line-height:1.4!important}
+.mission-goal-text{font-size:16.5px!important;line-height:1.4!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dobira-stage{display:flex;flex-direction:column;min-height:600px}
 .dobira-screen{flex:1;min-height:0;display:flex;flex-direction:column}
 .dobira-card{flex:1;min-height:0;padding:34px 22px 28px;display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid #bfe9e8;border-radius:18px;background:#fbfefe;text-align:center}
