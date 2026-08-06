@@ -409,19 +409,13 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
         {session.stage === "context" && <ContextStage session={session} patchSession={patchSession} />}
         {session.stage === "vocab" && <VocabStage patchSession={patchSession} onComplete={goNext} onBack={goBack} />}
         {session.stage === "grammar" && <GrammarStage session={session} patchSession={patchSession} />}
-        {session.stage === "listening" && <ListeningStage session={session} patchSession={patchSession} />}
-        {session.stage === "reading" && <ReadingStage session={session} patchSession={patchSession} />}
-        {session.stage === "dialogue" && <DialogueStage session={session} patchSession={patchSession} />}
-        {session.stage === "speaking" && <SpeakingStage session={session} patchSession={patchSession} />}
-        {session.stage === "writing" && <WritingStage session={session} patchSession={patchSession} />}
-        {session.stage === "mastery" && <MasteryStage session={session} state={state} />}
       </main>
       <footer className="learning-footer">
-        {session.stage === "mastery" ? (
+        {stageIndex === stageOrder.length - 1 && canProceed ? (
           session.completed ? (
             <button type="button" className="primary-button" onClick={() => setView("home")}>홈으로 돌아가기<ArrowRight /></button>
           ) : (
-            <button type="button" className="primary-button" onClick={finishSession}>차시 완료하고 다음 열기<CheckCircle /></button>
+            <button type="button" className="primary-button" onClick={() => { finishSession(); setView("home"); }}>차시 완료하고 홈으로 돌아가기<CheckCircle /></button>
           )
         ) : session.stage === "grammar" && !session.grammar.passed
           && session.grammar.view === "teach" && (session.grammar.teachStep || "text") === "text" ? (
