@@ -8,7 +8,7 @@ export const LESSON = {
 };
 
 export const SESSIONS = [
-  { id: 1, title: "나라와 국적 소개", label: "문법과 표현", expression: "저는 N이에요/예요", locked: false },
+  { id: 1, title: "나라와 국적 소개", titleVi: "Giới thiệu quốc gia và quốc tịch", label: "문법과 표현", expression: "저는 N이에요/예요", locked: false },
   { id: 2, title: "직업 묻고 답하기", label: "문법과 표현", expression: "N이에요/예요?", locked: true },
   { id: 3, title: "국적 문장 만들기", label: "문법과 표현", expression: "N은/는", locked: true },
   { id: 4, title: "틀린 정보 정정하기", label: "문법과 표현", expression: "N이/가 아니에요", locked: true },
@@ -17,7 +17,7 @@ export const SESSIONS = [
 ];
 
 export const STAGE_ORDER = [
-  "mission", "recall", "context", "vocab", "grammar", "report",
+  "mission", "recall", "context", "vocab", "grammar", "retry", "report",
 ];
 
 export const SKILLS = ["어휘", "문법", "듣기", "읽기", "말하기", "쓰기"];
@@ -124,14 +124,29 @@ export const SESSION1 = {
       translateDistractor: "저는 회사원이에요.",
     },
     speakingOutput: {
-      lead: "주어진 정보를 이용하여 [보기]처럼 문장을 완성하여 말하세요.",
+      lead: "주어진 정보를 이용하여 빈칸을 채우고 문장 전체를 말해 보세요.",
       model: [
         { speaker: "하영", lines: [["안녕하세요? 저는 ", "하영이에요"], ["저는 ", "한국 사람이에요"]] },
         { speaker: "유키", lines: [["만나서 반가워요. 저는 ", "유키예요"], ["저는 ", "일본 사람이에요"]] },
       ],
-      practice: [
-        { lines: [{ lead: "안녕하세요? 저는 ", answer: "타오예요", hint: "이름: 타오" }, { lead: "저는 ", answer: "베트남 사람이에요", hint: "국적: 베트남" }] },
-        { lines: [{ lead: "만나서 반가워요. 저는 ", answer: "민준이에요", hint: "이름: 민준" }, { lead: "저는 ", answer: "한국 사람이에요", hint: "국적: 한국" }] },
+      // 4 screens, 2 people each — one "문항" (screen) at a time
+      practiceScreens: [
+        [
+          { lines: [{ lead: "안녕하세요? 저는 ", answer: "타오예요", hint: "이름: 타오" }, { lead: "저는 ", answer: "베트남 사람이에요", hint: "국적: 베트남" }] },
+          { lines: [{ lead: "만나서 반가워요. 저는 ", answer: "민준이에요", hint: "이름: 민준" }, { lead: "저는 ", answer: "한국 사람이에요", hint: "국적: 한국" }] },
+        ],
+        [
+          { lines: [{ lead: "안녕하세요? 저는 ", answer: "유나예요", hint: "이름: 유나" }, { lead: "저는 ", answer: "캐나다 사람이에요", hint: "국적: 캐나다" }] },
+          { lines: [{ lead: "만나서 반가워요. 저는 ", answer: "성민이에요", hint: "이름: 성민" }, { lead: "저는 ", answer: "태국 사람이에요", hint: "국적: 태국" }] },
+        ],
+        [
+          { lines: [{ lead: "안녕하세요? 저는 ", answer: "링링이에요", hint: "이름: 링링" }, { lead: "저는 ", answer: "중국 사람이에요", hint: "국적: 중국" }] },
+          { lines: [{ lead: "만나서 반가워요. 저는 ", answer: "폴이에요", hint: "이름: 폴" }, { lead: "저는 ", answer: "프랑스 사람이에요", hint: "국적: 프랑스" }] },
+        ],
+        [
+          { lines: [{ lead: "안녕하세요? 저는 ", answer: "안나예요", hint: "이름: 안나" }, { lead: "저는 ", answer: "러시아 사람이에요", hint: "국적: 러시아" }] },
+          { lines: [{ lead: "만나서 반가워요. 저는 ", answer: "히로예요", hint: "이름: 히로" }, { lead: "저는 ", answer: "일본 사람이에요", hint: "국적: 일본" }] },
+        ],
       ],
     },
   },
@@ -198,11 +213,18 @@ export function defaultSessionState() {
     recall: "",
     contextConfirmed: false,
     vocabTouched: [],
+    vocabWrong: [],
     dobiraSeen: { vocab: false, grammar: false },
     contextFlow: "intro",
     vocabFlow: "wordbook",
     pronIndex: null,
-    grammar: { attempts: 0, passed: false, retry: false, selected: "", view: "teachIntro", videoDone: false, speakingDone: false },
+    grammar: {
+      attempts: 0, passed: false, retry: false, selected: "", view: "teachIntro",
+      videoDone: false, speakingDone: false, speakingIndex: 0, wrongKinds: [],
+      speakingMode: "voice", hintReveal: false,
+    },
+    retryFlow: "intro",
+    retryQueue: null,
     listening: { attempts: 0, listened: false, passed: false, selected: "" },
     reading: { attempts: 0, passed: false, selected: "" },
     dialogueConfirmed: false,
