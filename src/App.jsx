@@ -608,9 +608,7 @@ function ContextStage({ session, patchSession }) {
 
   if (session.vocabFlow === "intro") {
     return (
-      <div className="stage-section context-stage">
-        <div className="stage-kicker">오늘의 단어</div>
-        <h2>나라와 국적</h2>
+      <div className="stage-section context-stage dobira-stage">
         <DobiraCard kind="vocab" onStart={() => patchSession((prev) => ({
           dobiraSeen: { ...prev.dobiraSeen, vocab: true },
           vocabFlow: "wordbook",
@@ -700,8 +698,26 @@ function buildQuizQuestions(words) {
 // explaining *why* a stage/exercise-type exists rather than its difficulty
 // ---------------------------------------------------------------------
 const DOBIRA_COPY = {
-  vocab: { ko: "자기소개에 꼭 쓰는 단어예요. 짐작 → 듣기 → 보기 → 쓰기 순서로 익혀요.", vi: "Đây là những từ dùng khi tự giới thiệu. Học theo thứ tự: đoán – nghe – nhìn – viết." },
-  grammar: { ko: "자기소개의 기본 문장이에요. 여러 방식으로 연습해서 자연스럽게 말해봐요.", vi: "Đây là câu cơ bản khi tự giới thiệu. Luyện nhiều cách để nói tự nhiên hơn." },
+  vocab: {
+    badge: { ko: "오늘의 단어", vi: "Từ vựng hôm nay" },
+    icon: "book",
+    title: { ko: "자기소개에 꼭 쓰는 단어를 배워요", vi: "Học những từ dùng khi tự giới thiệu" },
+    lead: { ko: "짐작 → 듣기 → 보기 → 쓰기 순서로 하나씩 연습하며 익혀요.", vi: "Luyện theo thứ tự: đoán – nghe – nhìn – viết." },
+    quick: {
+      label: { ko: "학습 성과", vi: "Kết quả học tập" },
+      desc: { ko: "나라와 국적 단어 15개를 자유롭게 쓸 수 있어요.", vi: "Bạn sẽ dùng thành thạo 15 từ về quốc gia và quốc tịch." },
+    },
+  },
+  grammar: {
+    badge: { ko: "문법과 표현 1", vi: "Ngữ pháp & biểu hiện 1" },
+    icon: "note",
+    title: { ko: "자기소개 문장을 자연스럽게 말해요", vi: "Nói câu tự giới thiệu một cách tự nhiên" },
+    lead: { ko: "여러 방식으로 반복 연습하면 생각하지 않아도 문장이 나와요.", vi: "Luyện nhiều cách để câu nói ra tự nhiên mà không cần suy nghĩ." },
+    quick: {
+      label: { ko: "학습 성과", vi: "Kết quả học tập" },
+      desc: { ko: "'저는 OO이에요/예요' 문장을 자유자재로 만들 수 있어요.", vi: "Bạn sẽ tự tạo được câu '저는 OO이에요/예요'." },
+    },
+  },
 };
 
 // 7 base icon modules (스피커/단어카드/글자타일/문장카드/빈칸/체크/연결선) —
@@ -748,12 +764,24 @@ const MICRO_GUIDE = {
 function DobiraCard({ kind, onStart }) {
   const { lang } = useLang();
   const copy = DOBIRA_COPY[kind];
+  const t = (field) => pick(lang, field.ko, field.vi);
+  const Icon = copy.icon === "note" ? NoteIcon : BookIcon;
   return (
-    <div className="dobira-card">
-      <div className="lamp"><LightbulbIcon size={18} /></div>
-      <p className="ko">{pick(lang, copy.ko, copy.vi)}</p>
-      {lang === "ko" && <p className="vi">{copy.vi}</p>}
-      <button type="button" onClick={onStart}>시작하기</button>
+    <div className="dobira-screen">
+      <article className="dobira-card">
+        <span className="dobira-badge">{t(copy.badge)}</span>
+        <div className="dobira-icon"><Icon size={38} /></div>
+        <h2>{t(copy.title)}</h2>
+        <p className="dobira-lead">{t(copy.lead)}</p>
+        <div className="dobira-quick">
+          <CheckCircle size={22} />
+          <span>{t(copy.quick.label)}<small>{t(copy.quick.desc)}</small></span>
+        </div>
+      </article>
+      <div className="dobira-footer">
+        <button type="button" className="dobira-skip" onClick={onStart}>건너뛰기</button>
+        <button type="button" className="dobira-start" onClick={onStart}>시작하기</button>
+      </div>
     </div>
   );
 }
@@ -1333,7 +1361,7 @@ function GrammarStage({ session, patchSession }) {
 
   if (view === "intro") {
     return (
-      <div className="stage-section grammar-stage">
+      <div className="stage-section grammar-stage dobira-stage">
         <DobiraCard kind="grammar" onStart={() => patchSession((prev) => ({
           dobiraSeen: { ...prev.dobiraSeen, grammar: true },
           grammar: { ...prev.grammar, view: "quiz" },
