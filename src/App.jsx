@@ -439,6 +439,24 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
           ) : (
             <p className="footer-hint-text">영상을 끝까지 보면 다음으로 넘어갈 수 있어요.</p>
           )
+        ) : session.stage === "grammar" && session.grammar.view === "speaking" ? (
+          session.grammar.speakingDone ? (
+            <button type="button" className="primary-button"
+              onClick={() => patchSession((prev) => ({ grammar: { ...prev.grammar, view: "teach", teachStep: "text" } }))}>다음<ArrowRight /></button>
+          ) : (
+            <div className="speak-output-footer">
+              <button type="button" className="secondary-button skip-button"
+                onClick={() => patchSession((prev) => ({ grammar: { ...prev.grammar, view: "teach", teachStep: "text" } }))}>건너뛰기</button>
+              <div className="speak-tool-dock">
+                <button type="button" aria-label="키보드"><KeyboardIcon size={20} /></button>
+                <button type="button" className="speak-mic" aria-label="마이크"
+                  onClick={() => patchSession((prev) => ({ grammar: { ...prev.grammar, speakingDone: true } }))}>
+                  <MicIcon size={24} />
+                </button>
+                <button type="button" className="speak-hint" aria-label="힌트"><LightbulbIcon size={18} /></button>
+              </div>
+            </div>
+          )
         ) : session.stage === "context" && session.vocabFlow === "wordbook" ? (
           <div className="grammar-choice-footer">
             <button type="button" className="active" onClick={() => patchSession({ pronIndex: 0 })}>단어 발음하기</button>
@@ -1387,11 +1405,60 @@ function GrammarStage({ session, patchSession }) {
       {view === "quiz" && (
         <GrammarSentenceQuiz
           data={g.sentenceQuiz}
-          onAllDone={() => patchSession((prev) => ({ grammar: { ...prev.grammar, passed: true, view: "teach", teachStep: "text" } }))}
+          onAllDone={() => patchSession((prev) => ({ grammar: { ...prev.grammar, passed: true, view: "speaking", speakingDone: false } }))}
           onExit={() => patchSession((prev) => ({ grammar: { ...prev.grammar, view: "intro" } }))}
         />
       )}
+
+      {view === "speaking" && <SpeakingOutputContent data={g.speakingOutput} done={session.grammar.speakingDone} />}
     </div>
+  );
+}
+
+function SpeakingOutputContent({ data, done }) {
+  return (
+    <>
+      <div className="stage-kicker"><MicIcon size={16} /> 실전평가</div>
+      <h2>빈칸을 채워 말해 보세요.</h2>
+      <p className="speak-output-lead">{data.lead}</p>
+
+      <section className="speak-model-card" aria-label="보기">
+        <span>보기</span>
+        {data.model.map((row) => (
+          <p className="speak-model-line" key={row.speaker}>
+            <strong>{row.speaker}:</strong>
+            <span>
+              {row.lines.map(([lead, chip], i) => (
+                <em key={i}>{lead}<b className="speak-chip">{chip}</b>.</em>
+              ))}
+            </span>
+          </p>
+        ))}
+      </section>
+
+      <section className="speak-practice-card" aria-label="빈칸 말하기">
+        <div className="speak-chat-list">
+          {data.practice.map((row, i) => (
+            <div className={`speak-chat-row ${i === 0 ? "first" : "second"}`} key={i}>
+              <div className="speak-bubble">
+                <strong>
+                  {row.lines.map((line, j) => (
+                    <span className="speak-output-line" key={j}>
+                      {line.lead}
+                      <span className="speak-blank-wrap">
+                        <span className={`speak-blank ${done ? "filled" : ""}`}>{done ? line.answer : ""}</span>
+                        {!done && <i>{line.hint}</i>}
+                      </span>
+                      .
+                    </span>
+                  ))}
+                </strong>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    </>
   );
 }
 

@@ -124,6 +124,17 @@ export const SESSION1 = {
       },
       translateDistractor: "저는 회사원이에요.",
     },
+    speakingOutput: {
+      lead: "주어진 정보를 이용하여 [보기]처럼 문장을 완성하여 말하세요.",
+      model: [
+        { speaker: "하영", lines: [["안녕하세요? 저는 ", "하영이에요"], ["저는 ", "한국 사람이에요"]] },
+        { speaker: "유키", lines: [["만나서 반가워요. 저는 ", "유키예요"], ["저는 ", "일본 사람이에요"]] },
+      ],
+      practice: [
+        { lines: [{ lead: "안녕하세요? 저는 ", answer: "타오예요", hint: "이름: 타오" }, { lead: "저는 ", answer: "베트남 사람이에요", hint: "국적: 베트남" }] },
+        { lines: [{ lead: "만나서 반가워요. 저는 ", answer: "민준이에요", hint: "이름: 민준" }, { lead: "저는 ", answer: "한국 사람이에요", hint: "국적: 한국" }] },
+      ],
+    },
   },
   listening: {
     prompt: "두 사람은 무엇을 말했어요?",
@@ -191,7 +202,7 @@ export function defaultSessionState() {
     dobiraSeen: { vocab: false, grammar: false },
     vocabFlow: "wordbook",
     pronIndex: null,
-    grammar: { attempts: 0, passed: false, retry: false, selected: "", view: "teach", teachStep: "text", videoDone: false },
+    grammar: { attempts: 0, passed: false, retry: false, selected: "", view: "teach", teachStep: "text", videoDone: false, speakingDone: false },
     listening: { attempts: 0, listened: false, passed: false, selected: "" },
     reading: { attempts: 0, passed: false, selected: "" },
     dialogueConfirmed: false,
