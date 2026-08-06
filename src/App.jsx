@@ -1381,6 +1381,13 @@ function GrammarStage({ session, patchSession }) {
   const view = session.grammar.view;
   const teachStep = session.grammar.teachStep || "text";
   const { lang } = useLang();
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    if (view === "teach" && teachStep === "video" && videoRef.current) {
+      videoRef.current.requestFullscreen?.().catch(() => {});
+    }
+  }, [view, teachStep]);
 
   if (view === "intro") {
     return (
@@ -1398,8 +1405,11 @@ function GrammarStage({ session, patchSession }) {
       {view === "teach" && teachStep === "video" && (
         <div className="video-block">
           <div className="media-label">선생님 설명</div>
-          <video src="/media/lesson1-guide.mp4" poster="/assets/tutor.jpg" controls playsInline preload="metadata" autoPlay
-            onEnded={() => patchSession((prev) => ({ grammar: { ...prev.grammar, videoDone: true } }))}>
+          <video ref={videoRef} src="/media/lesson1-guide.mp4" poster="/assets/tutor.jpg" controls playsInline preload="metadata" autoPlay
+            onEnded={() => {
+              document.exitFullscreen?.().catch(() => {});
+              patchSession((prev) => ({ grammar: { ...prev.grammar, videoDone: true } }));
+            }}>
             <track kind="captions" src="/media/lesson1-guide.vtt" srcLang="ko" label="한국어" default />
             한국어 설명 영상
           </video>
