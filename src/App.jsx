@@ -321,6 +321,22 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
   const meta = SESSIONS.find((s) => s.id === state.activeSession);
 
   const goBack = () => {
+    if (session.stage === "grammar") {
+      const g = session.grammar;
+      const grammarBackView = {
+        speaking: "speakingIntro",
+        speakingIntro: "quizIntro",
+        quizIntro: g.videoDone ? "video" : "teach",
+        video: "videoIntro",
+        videoIntro: "teach",
+        teach: "teachIntro",
+      }[g.view];
+      if (grammarBackView) {
+        patchSession((prev) => ({ grammar: { ...prev.grammar, view: grammarBackView } }));
+        return;
+      }
+      // g.view === "teachIntro" falls through to the previous top-level stage below.
+    }
     if (stageIndex === 0) { setView("home"); return; }
     const prev = stageOrder[stageIndex - 1];
     patchSession({ stage: prev });
@@ -1952,17 +1968,6 @@ function LearningReportStage({ session, state, meta, patchSession }) {
       <section className="report-feedback">
         <span>AI 피드백</span>
         <p>오늘의 미션을 잘 완료했어요. 다음에는 <b>저는 베트남 사람이에요</b>처럼 이름 표현과 국적 표현을 구분해서 말해 보세요.</p>
-      </section>
-
-      <section className="report-review">
-        <h3>다음 복습</h3>
-        {state.weakQueue.length === 0 ? (
-          <p><CheckCircle size={17} />오늘은 꼭 다시 풀 문항이 없어요.</p>
-        ) : (
-          state.weakQueue.map((w) => (
-            <p key={w.id}><ClockWeakIcon size={17} />{w.label}<small>{w.session}차시</small></p>
-          ))
-        )}
       </section>
     </div>
   );
