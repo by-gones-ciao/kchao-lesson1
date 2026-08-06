@@ -23,6 +23,13 @@ function pick(lang, ko, vi) {
   return lang === "vi" ? (vi ?? ko) : ko;
 }
 
+const STAGE_LABELS = {
+  mission: "학습 목표", recall: "지난 내용 회상", context: "상황 만나기", vocab: "핵심 어휘",
+  grammar: "표현 이해", listening: "듣고 확인", reading: "읽고 확인", dialogue: "교재 대화",
+  speaking: "짧게 말하기", writing: "짧게 쓰기", mastery: "마스터 체크",
+  retry: "오답 다시 풀기", report: "학습 리포트",
+};
+
 function LangToggle() {
   const { lang, setLang } = useLang();
   return (
@@ -73,13 +80,12 @@ export default function App() {
     <LangContext.Provider value={{ lang, setLang }}>
     <div className="app-backdrop">
       <div className="desktop-layout">
-        <DesktopRail state={state} setView={setView} completedCount={completedCount} />
         <div className="mobile-prototype" data-testid="mobile-app">
           {state.view === "home" && (
             <HomeScreen state={state} setState={setState} setView={setView} completedCount={completedCount} />
           )}
           {state.view === "coverage" && <CoverageScreen setView={setView} />}
-          {state.view === "records" && <RecordsScreen state={state} setView={setView} completedCount={completedCount} />}
+          {state.view === "report" && <ReportScreen state={state} setState={setState} setView={setView} completedCount={completedCount} />}
           {state.view === "learning" && (
             <LearningScreen state={state} setState={setState} session={session} patchSession={patchSession} setView={setView} />
           )}
@@ -91,50 +97,7 @@ export default function App() {
 }
 
 // ---------------------------------------------------------------------
-// desktop rail (left sidebar mirror of the session path)
-// ---------------------------------------------------------------------
-function DesktopRail({ state, setView, completedCount }) {
-  const pct = Math.round((completedCount / SESSIONS.length) * 100);
-  return (
-    <aside className="desktop-rail" aria-label="1과 학습 경로">
-      <header className="brand-header">
-        <img alt="K-Chao" className="brand-logo" src="/assets/kchao-logo.svg" />
-        <div className="streak" aria-label="학습 연속 기록 1일">
-          <FlameIcon size={19} />
-          <span>1일 연속</span>
-        </div>
-      </header>
-      <div className="rail-title">
-        <span>1과 학습 경로</span>
-        <strong>{LESSON.title}</strong>
-        <p>{LESSON.summary}</p>
-      </div>
-      <div className="rail-progress" aria-label={`전체 ${completedCount}/${SESSIONS.length}차시 완료`}>
-        <div><span>전체 진도</span><strong>{completedCount}/{SESSIONS.length}</strong></div>
-        <div className="progress-track"><span style={{ width: `${pct}%` }} /></div>
-      </div>
-      <div className="rail-sessions">
-        {SESSIONS.map((s) => {
-          const unlocked = s.id === 1;
-          return (
-            <button key={s.id} type="button" disabled={!unlocked}
-              onClick={() => unlocked && setView("learning")}>
-              <span className="rail-number">{s.id}</span>
-              <span><strong>{s.title}</strong><small>{s.expression}</small></span>
-            </button>
-          );
-        })}
-      </div>
-      <div className="rail-links">
-        <button type="button" onClick={() => setView("coverage")}><MapPinIcon size={18} /> p16–35 커버리지</button>
-        <button type="button" onClick={() => setView("records")}><NoteIcon size={18} /> 내 학습 기록</button>
-      </div>
-    </aside>
-  );
-}
-
-// ---------------------------------------------------------------------
-// bottom nav shared by home / coverage / records screens
+// bottom nav shared by home / coverage / report screens
 // ---------------------------------------------------------------------
 function BottomNav({ active, setView }) {
   return (
@@ -145,8 +108,8 @@ function BottomNav({ active, setView }) {
       <button type="button" className={active === "coverage" ? "active" : ""} aria-current={active === "coverage" ? "page" : undefined} onClick={() => setView("coverage")}>
         <BookNavIcon /><span>교재</span>
       </button>
-      <button type="button" className={active === "records" ? "active" : ""} aria-current={active === "records" ? "page" : undefined} onClick={() => setView("records")}>
-        {active === "records" ? <RecordNavIcon /> : <RecordNavIconInactive />}<span>기록</span>
+      <button type="button" className={active === "report" ? "active" : ""} aria-current={active === "report" ? "page" : undefined} onClick={() => setView("report")}>
+        {active === "report" ? <RecordNavIcon /> : <RecordNavIconInactive />}<span>리포트</span>
       </button>
     </nav>
   );
@@ -276,11 +239,17 @@ function CoverageScreen({ setView }) {
 }
 
 // ---------------------------------------------------------------------
-// records
+// report
 // ---------------------------------------------------------------------
-function RecordsScreen({ state, setView, completedCount }) {
+function ReportScreen({ state, setState, setView, completedCount }) {
+  const startSession = (id) => {
+    setState((s) => ({ ...s, view: "learning", activeSession: id }));
+  };
   const sessionsWithOutput = Object.entries(state.sessions).filter(
     ([, s]) => s.speaking?.saved || s.writing?.saved
+  );
+  const inProgress = Object.entries(state.sessions).filter(
+    ([, s]) => !s.completed && (s.visited?.length > 1 || s.stage !== "mission")
   );
   return (
     <div className="screen support-screen">
@@ -288,7 +257,7 @@ function RecordsScreen({ state, setView, completedCount }) {
         <header className="brand-header compact"><img alt="K-Chao" className="brand-logo" src="/assets/kchao-logo.svg" /></header>
         <header className="support-title">
           <p>이 기기에 자동 저장</p>
-          <h1>내 학습 기록</h1>
+          <h1>학습 리포트</h1>
           <span>중간에 나가도 마지막 단계와 저장한 말하기·쓰기를 이어서 볼 수 있어요.</span>
         </header>
         <section className="record-panel">
@@ -302,6 +271,18 @@ function RecordsScreen({ state, setView, completedCount }) {
             );
           })}
           {completedCount === 0 && <p className="empty-copy">아직 완료한 차시가 없어요.</p>}
+        </section>
+        <section className="record-panel">
+          <div className="record-panel-title"><HourglassIcon size={21} /><h2>진행 중인 차시</h2><strong>{inProgress.length}</strong></div>
+          {inProgress.map(([id, s]) => {
+            const meta = SESSIONS.find((sess) => sess.id === Number(id));
+            return (
+              <button type="button" key={id} onClick={() => startSession(Number(id))}>
+                <span>{id}차시 · {meta?.title}</span><small>{STAGE_LABELS[s.stage] || s.stage}까지 진행함</small>
+              </button>
+            );
+          })}
+          {inProgress.length === 0 && <p className="empty-copy">진행 중인 차시가 없어요.</p>}
         </section>
         <section className="record-panel">
           <div className="record-panel-title"><SpeakerIcon size={21} /><h2>저장한 산출물</h2><strong>{sessionsWithOutput.length}</strong></div>
@@ -320,7 +301,7 @@ function RecordsScreen({ state, setView, completedCount }) {
           {state.weakQueue.length === 0 && <p className="empty-copy all-clear">보완할 항목이 없어요.</p>}
         </section>
       </div>
-      <BottomNav active="records" setView={setView} />
+      <BottomNav active="report" setView={setView} />
     </div>
   );
 }
@@ -381,12 +362,7 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
     }
   }, [session]);
 
-  const stageLabel = {
-    mission: "학습 목표", recall: "지난 내용 회상", context: "상황 만나기", vocab: "핵심 어휘",
-    grammar: "표현 이해", listening: "듣고 확인", reading: "읽고 확인", dialogue: "교재 대화",
-    speaking: "짧게 말하기", writing: "짧게 쓰기", mastery: "마스터 체크",
-    retry: "오답 다시 풀기", report: "학습 리포트",
-  }[session.stage];
+  const stageLabel = STAGE_LABELS[session.stage];
 
   return (
     <div className="screen learning-screen">
