@@ -379,6 +379,7 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
       case "speaking": return session.speaking.saved;
       case "writing": return session.writing.saved;
       case "mastery": return true;
+      case "report": return true;
       default: return false;
     }
   }, [session]);
@@ -386,7 +387,7 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
   const stageLabel = {
     mission: "학습 목표", recall: "지난 내용 회상", context: "상황 만나기", vocab: "핵심 어휘",
     grammar: "표현 이해", listening: "듣고 확인", reading: "읽고 확인", dialogue: "교재 대화",
-    speaking: "짧게 말하기", writing: "짧게 쓰기", mastery: "마스터 체크",
+    speaking: "짧게 말하기", writing: "짧게 쓰기", mastery: "마스터 체크", report: "학습 리포트",
   }[session.stage];
 
   return (
@@ -411,6 +412,7 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
         {session.stage === "context" && <ContextStage session={session} patchSession={patchSession} />}
         {session.stage === "vocab" && <VocabStage patchSession={patchSession} onComplete={goNext} onBack={goBack} />}
         {session.stage === "grammar" && <GrammarStage session={session} patchSession={patchSession} />}
+        {session.stage === "report" && <LearningReportStage session={session} state={state} meta={meta} patchSession={patchSession} />}
       </main>
       <footer className="learning-footer">
         {session.stage === "grammar" && session.grammar.view === "teachIntro" ? (
@@ -441,12 +443,10 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
             onClick={() => patchSession((prev) => ({ grammar: { ...prev.grammar, view: "speaking" } }))}>시작하기<ArrowRight /></button>
         ) : session.stage === "grammar" && session.grammar.view === "speaking" ? (
           session.grammar.speakingDone ? (
-            <button type="button" className="primary-button"
-              onClick={() => patchSession((prev) => ({ grammar: { ...prev.grammar, view: "teach" } }))}>다음<ArrowRight /></button>
+            <button type="button" className="primary-button" onClick={goNext}>다음<ArrowRight /></button>
           ) : (
             <div className="speak-output-footer">
-              <button type="button" className="secondary-button skip-button"
-                onClick={() => patchSession((prev) => ({ grammar: { ...prev.grammar, view: "teach" } }))}>건너뛰기</button>
+              <button type="button" className="secondary-button skip-button" onClick={goNext}>건너뛰기</button>
               <div className="speak-tool-dock">
                 <button type="button" aria-label="키보드"><KeyboardIcon size={20} /></button>
                 <button type="button" className="speak-mic" aria-label="마이크"
@@ -471,12 +471,8 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
             <button type="button" className="active" onClick={() => patchSession({ pronIndex: 0 })}>단어 발음하기</button>
             <button type="button" onClick={() => patchSession({ vocabFlow: "intro" })}>바로 문제 풀기</button>
           </div>
-        ) : stageIndex === stageOrder.length - 1 && canProceed ? (
-          session.completed ? (
-            <button type="button" className="primary-button" onClick={() => setView("home")}>홈으로 돌아가기<ArrowRight /></button>
-          ) : (
-            <button type="button" className="primary-button" onClick={() => { finishSession(); setView("home"); }}>차시 완료하고 홈으로 돌아가기<CheckCircle /></button>
-          )
+        ) : session.stage === "report" ? (
+          <button type="button" className="complete-button" onClick={() => { finishSession(); setView("home"); }}>학습 완료</button>
         ) : (
           <div className="footer-nav-row">
             {!canProceed && (
@@ -1765,34 +1761,56 @@ function WritingStage({ session, patchSession }) {
   );
 }
 
-function MasteryStage({ session, state }) {
-  const m = SESSION1.mastery;
-  const passCount = [session.grammar.passed, session.listening.passed, session.reading.passed].filter(Boolean).length;
+function LearningReportStage({ session, state, meta, patchSession }) {
+  const g = SESSION1.grammar;
+  const speakingCount = g.speakingOutput.practice.length;
+  const goReview = (patch) => patchSession(patch);
+
   return (
-    <div className="stage-section mastery-stage">
-      <div className="stage-kicker">마스터 체크</div>
-      <h2>{m.artifact}</h2>
-      <p className="stage-lead">필수 확인과 두 산출물이 모두 저장되어야 차시가 완료됩니다.</p>
-      <section className="mastery-panel">
-        <div className="mastery-score"><span>대표 확인</span><strong>{passCount}/3</strong></div>
-        {m.checklist.map((c) => (
-          <div className="done" key={c}><CheckCircle size={20} /><span>{c}</span></div>
-        ))}
+    <div className="stage-section report-stage">
+      <div className="stage-kicker"><CertificateIcon size={17} /> 학습 리포트</div>
+      <h2>{meta?.title}</h2>
+      <p className="stage-lead">오늘 배운 표현을 얼마나 잘 사용할 수 있는지 확인해 보세요.</p>
+
+      <section className="report-hero">
+        <span>{state.activeSession}차시 완료 요약</span>
+        <strong>이름과 국적을 넣어 자기소개 말하기</strong>
+        <p>핵심 표현과 발음평가를 확인했어요. 필요한 항목은 아래에서 바로 다시 볼 수 있습니다.</p>
       </section>
-      <section className="weak-summary">
-        <h3>보완 복습 <span>최대 3개</span></h3>
-        {session.grammar.retry ? (
-          <p><ClockWeakIcon size={17} />{SESSION1.grammar.title}<small>{state.activeSession}차시</small></p>
+
+      <section className="report-stats" aria-label="학습 결과 지표">
+        <div className="report-stat"><BookIcon size={22} /><span>학습 어휘</span><strong>{SESSION1.context.words.length}개</strong></div>
+        <div className="report-stat"><MicIcon size={22} /><span>발음평가</span><strong>{speakingCount}/{speakingCount}</strong></div>
+        <div className="report-stat"><CheckCircle size={22} /><span>확인 문제</span><strong>7/7</strong></div>
+      </section>
+
+      <section className="report-actions" aria-label="다시 보기">
+        <button type="button" onClick={() => goReview({ stage: "context", contextFlow: "wordbook", vocabFlow: "wordbook" })}>
+          <span>단어장 다시 보기</span><strong>{SESSION1.context.words.length}개</strong><ChevronRight size={18} />
+        </button>
+        <button type="button" onClick={() => goReview({ stage: "grammar", grammar: { ...session.grammar, view: "teach" } })}>
+          <span>문법 다시 보기</span><strong>이에요/예요</strong><ChevronRight size={18} />
+        </button>
+        <button type="button" onClick={() => goReview({ stage: "grammar", grammar: { ...session.grammar, view: "speaking", speakingDone: true } })}>
+          <span>내가 말한 문장 보기</span><strong>저장됨</strong><ChevronRight size={18} />
+        </button>
+      </section>
+
+      <section className="report-feedback">
+        <span>AI 피드백</span>
+        <p>오늘의 미션을 잘 완료했어요. 다음에는 <b>저는 베트남 사람이에요</b>처럼 이름 표현과 국적 표현을 구분해서 말해 보세요.</p>
+      </section>
+
+      <section className="report-review">
+        <h3>다음 복습</h3>
+        {state.weakQueue.length === 0 ? (
+          <p><CheckCircle size={17} />오늘은 꼭 다시 풀 문항이 없어요.</p>
         ) : (
-          <p className="all-clear">보완할 항목이 없어요.</p>
+          state.weakQueue.map((w) => (
+            <p key={w.id}><ClockWeakIcon size={17} />{w.label}<small>{w.session}차시</small></p>
+          ))
         )}
       </section>
-      {session.completed && (
-        <div className="completion-banner">
-          <CheckCircle size={28} />
-          <div><strong>{state.activeSession}차시 완료!</strong><span>{m.nextHint}</span></div>
-        </div>
-      )}
     </div>
   );
 }

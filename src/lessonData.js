@@ -17,7 +17,7 @@ export const SESSIONS = [
 ];
 
 export const STAGE_ORDER = [
-  "mission", "recall", "context", "vocab", "grammar",
+  "mission", "recall", "context", "vocab", "grammar", "report",
 ];
 
 export const SKILLS = ["어휘", "문법", "듣기", "읽기", "말하기", "쓰기"];
