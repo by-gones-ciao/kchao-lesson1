@@ -138,7 +138,7 @@ export const SESSION1 = {
       translateDistractor: "저는 회사원이에요.",
     },
     speakingOutput: {
-      lead: "주어진 정보를 이용하여 빈칸을 채우고 문장 전체를 말해 보세요.",
+      lead: "주어진 정보를 넣어 문장을 완성한 뒤, 소리 내어 말하세요.",
       model: [
         { speaker: "하영", lines: [["안녕하세요? 저는 ", "하영이에요"], ["저는 ", "한국 사람이에요"]] },
         { speaker: "유키", lines: [["만나서 반가워요. 저는 ", "유키예요"], ["저는 ", "일본 사람이에요"]] },

@@ -842,8 +842,8 @@ const DOBIRA_COPY = {
   speaking: {
     badge: { ko: "실전평가", vi: "Đánh giá thực hành" },
     icon: "mic",
-    title: { ko: "배운 문장을 직접 말해봐요", vi: "Tự nói câu đã học" },
-    lead: { ko: "빈칸을 채워 [보기]처럼 문장을 완성해서 말하세요.", vi: "Điền chỗ trống và nói câu hoàn chỉnh như [보기]." },
+    title: { ko: "자기소개 문장을 직접 말해봐요", vi: "Tự nói câu tự giới thiệu" },
+    lead: { ko: "빈칸을 채워 [보기]처럼 문장을 완성해 말하세요", vi: "Điền chỗ trống và nói câu hoàn chỉnh như [보기]." },
     quick: {
       label: { ko: "학습 성과", vi: "Kết quả học tập" },
       desc: { ko: "이름과 국적을 넣어 자기소개 문장을 말할 수 있어요.", vi: "Bạn sẽ nói được câu tự giới thiệu với tên và quốc tịch." },
@@ -1559,10 +1559,11 @@ function SpeakingOutputContent({ data, screenIndex, totalScreens, mode, hintReve
   return (
     <>
       <div className="stage-kicker"><MicIcon size={16} /> 실전평가 · {screenIndex + 1}/{totalScreens}</div>
-      <h2>빈칸을 채워 말해 보세요.</h2>
+      <h2>빈칸을 채우고 말해 보세요.</h2>
       <p className="speak-output-lead">{data.lead}</p>
 
       <section className="speak-model-card" aria-label="보기">
+        <img className="speak-model-image" alt="두 사람이 서로 인사하며 자기소개하는 모습" src="/assets/conversation.png" />
         <span>보기</span>
         {data.model.map((row) => (
           <p className="speak-model-line" key={row.speaker}>
