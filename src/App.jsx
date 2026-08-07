@@ -696,7 +696,11 @@ function PronunciationModal({ words, index, onClose, onNext }) {
         <button type="button" className="pron-close" aria-label="건너뛰기" onClick={onClose}><XCircle size={26} /></button>
       </div>
       <p className="pron-title">다음 단어를 발음해 보세요</p>
-      <div className="pron-image"><img alt="" src="/assets/classroom.jpg" /></div>
+      <div className="pron-image">
+        {FLAG_COMPONENT[word.ko]
+          ? <img alt={word.ko} src={FLAG_COMPONENT[word.ko]} />
+          : <img alt="" src="/assets/classroom.jpg" />}
+      </div>
       <div className="pron-word-card">
         <button type="button" className="pron-speak" aria-label={`${word.ko} 듣기`} onClick={() => speakKo(word.ko)}>
           <SpeakerIcon size={20} />
