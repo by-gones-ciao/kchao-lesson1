@@ -54,7 +54,7 @@
 .quiz-prompt-box{min-height:64px;margin-bottom:24px;padding:14px;display:flex;align-items:center;justify-content:center;border:1px solid var(--teal);border-radius:12px;background:#fff;font-size:19px;font-weight:800;color:var(--ink);text-align:center}
 .quiz-flag-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .quiz-flag-tile{border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;justify-items:center;gap:8px;background:#fff;cursor:pointer}
-.quiz-flag-tile .flag{width:56px;height:auto;border-radius:4px;box-shadow:0 0 0 1px rgb(4 48 61 / 8%)}
+.quiz-flag-tile .flag{width:56px;height:42px;object-fit:cover;border-radius:4px;box-shadow:0 0 0 1px rgb(4 48 61 / 8%)}
 .quiz-flag-tile strong{font-size:14px}
 .quiz-flag-tile.correct{border-color:var(--teal);background:#f1fffe;color:var(--teal-dark)}
 .quiz-flag-tile.wrong{border-color:#f16f74;background:#fff7f7;color:#d6464b}

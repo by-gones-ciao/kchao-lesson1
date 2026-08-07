@@ -10,7 +10,6 @@ import {
   LESSON, SESSIONS, STAGE_ORDER, SESSION1,
   COVERAGE, defaultSessionState, STORAGE_KEY,
 } from "./lessonData.js";
-import { VN, KR, ID, RU, US, CA, TH, FR, CN, JP, MY, DE } from "country-flag-icons/react/3x2";
 
 // ---------------------------------------------------------------------
 // language toggle (KR / VT) — default Korean, switches all bilingual text
@@ -779,14 +778,19 @@ function ContextStage({ session, patchSession }) {
 }
 
 const FLAG_COMPONENT = {
-  "베트남": VN, "한국": KR, "인도네시아": ID, "러시아": RU,
-  "미국": US, "캐나다": CA, "태국": TH, "프랑스": FR,
-  "중국": CN, "일본": JP, "말레이시아": MY, "독일": DE,
+  "베트남": "/assets/flags/vietnam.jpeg", "한국": "/assets/flags/korea.jpeg",
+  "인도네시아": "/assets/flags/indonesia.jpeg", "러시아": "/assets/flags/russia.jpeg",
+  "미국": "/assets/flags/usa.jpeg", "캐나다": "/assets/flags/canada.jpeg",
+  "태국": "/assets/flags/thailand.jpeg", "프랑스": "/assets/flags/france.jpeg",
+  "중국": "/assets/flags/china.jpeg", "일본": "/assets/flags/japan.jpeg",
+  "말레이시아": "/assets/flags/malaysia.jpeg", "독일": "/assets/flags/germany.jpeg",
+  "베트남 사람": "/assets/flags/person-vietnam.jpeg", "한국 사람": "/assets/flags/person-korea.jpeg",
+  "일본 사람": "/assets/flags/person-japan.jpeg",
 };
 
 function FlagIconFor({ ko, className }) {
-  const Flag = FLAG_COMPONENT[ko];
-  return Flag ? <Flag className={className} title={ko} /> : null;
+  const src = FLAG_COMPONENT[ko];
+  return src ? <img src={src} alt={ko} className={className} /> : null;
 }
 
 function shuffle(arr) {

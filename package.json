@@ -10,7 +10,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "country-flag-icons": "^1.6.20",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
   },
