@@ -232,13 +232,18 @@ const SPEECH_RATE_OPTIONS = [
 
 function SettingsScreen({ settings, setState, setView }) {
   const { lang } = useLang();
+  const [open, setOpen] = useState(null); // null | "speed" | "notify"
   const [rate, setRate] = useState(settings.speechRate);
   const [ampm, setAmpm] = useState(settings.notifyAmPm);
   const [hour, setHour] = useState(settings.notifyHour);
   const [minute, setMinute] = useState(settings.notifyMinute);
 
-  const saveRate = () => setState((s) => ({ ...s, settings: { ...s.settings, speechRate: rate } }));
-  const saveNotify = () => setState((s) => ({ ...s, settings: { ...s.settings, notifyAmPm: ampm, notifyHour: hour, notifyMinute: minute } }));
+  const toggle = (key) => setOpen((o) => (o === key ? null : key));
+  const saveRate = () => { setState((s) => ({ ...s, settings: { ...s.settings, speechRate: rate } })); setOpen(null); };
+  const saveNotify = () => { setState((s) => ({ ...s, settings: { ...s.settings, notifyAmPm: ampm, notifyHour: hour, notifyMinute: minute } })); setOpen(null); };
+
+  const rateOpt = SPEECH_RATE_OPTIONS.find((o) => o.value === settings.speechRate);
+  const notifyValue = `${pick(lang, settings.notifyAmPm, settings.notifyAmPm === "오전" ? "Sáng" : "Chiều")} ${settings.notifyHour}${pick(lang, "시", "h")} ${String(settings.notifyMinute).padStart(2, "0")}${pick(lang, "분", "")}`;
 
   return (
     <div className="screen support-screen">
@@ -249,34 +254,50 @@ function SettingsScreen({ settings, setState, setView }) {
           <LangToggle />
         </header>
 
-        <section className="settings-panel">
-          <h2>{pick(lang, "말하기 속도", "Tốc độ nói")}</h2>
-          <div className="settings-speed-list">
-            {SPEECH_RATE_OPTIONS.map((opt) => (
-              <button type="button" key={opt.value} className={rate === opt.value ? "active" : ""} onClick={() => setRate(opt.value)}>
-                <strong>{pick(lang, `${opt.ko} ${opt.ko2}`, opt.vi)}</strong>
-                <small>{pick(lang, opt.desc.ko, opt.desc.vi)}</small>
-              </button>
-            ))}
-          </div>
-          <button type="button" className="primary-button" onClick={saveRate}>{pick(lang, "확인", "Xác nhận")}</button>
+        <section className="settings-accordion">
+          <button type="button" className={`settings-row ${open === "speed" ? "expanded" : ""}`} onClick={() => toggle("speed")}>
+            <span>{pick(lang, "말하기 속도", "Tốc độ nói")}</span>
+            <strong>{pick(lang, `${rateOpt.ko} ${rateOpt.ko2}`, rateOpt.vi)}</strong>
+            <ChevronRight size={16} />
+          </button>
+          {open === "speed" && (
+            <div className="settings-panel-body">
+              <div className="settings-speed-list">
+                {SPEECH_RATE_OPTIONS.map((opt) => (
+                  <button type="button" key={opt.value} className={rate === opt.value ? "active" : ""} onClick={() => setRate(opt.value)}>
+                    <strong>{pick(lang, `${opt.ko} ${opt.ko2}`, opt.vi)}</strong>
+                    <small>{pick(lang, opt.desc.ko, opt.desc.vi)}</small>
+                  </button>
+                ))}
+              </div>
+              <button type="button" className="primary-button" onClick={saveRate}>{pick(lang, "확인", "Xác nhận")}</button>
+            </div>
+          )}
         </section>
 
-        <section className="settings-panel">
-          <h2>{pick(lang, "알림 시간", "Giờ nhắc học")}</h2>
-          <div className="settings-time-row">
-            <select value={ampm} onChange={(e) => setAmpm(e.target.value)}>
-              <option value="오전">{pick(lang, "오전", "Sáng")}</option>
-              <option value="오후">{pick(lang, "오후", "Chiều")}</option>
-            </select>
-            <select value={hour} onChange={(e) => setHour(Number(e.target.value))}>
-              {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => <option key={h} value={h}>{h}{pick(lang, "시", "h")}</option>)}
-            </select>
-            <select value={minute} onChange={(e) => setMinute(Number(e.target.value))}>
-              {Array.from({ length: 12 }, (_, i) => i * 5).map((m) => <option key={m} value={m}>{String(m).padStart(2, "0")}{pick(lang, "분", "")}</option>)}
-            </select>
-          </div>
-          <button type="button" className="primary-button" onClick={saveNotify}>{pick(lang, "확인", "Xác nhận")}</button>
+        <section className="settings-accordion">
+          <button type="button" className={`settings-row ${open === "notify" ? "expanded" : ""}`} onClick={() => toggle("notify")}>
+            <span>{pick(lang, "알림 시간", "Giờ nhắc học")}</span>
+            <strong>{notifyValue}</strong>
+            <ChevronRight size={16} />
+          </button>
+          {open === "notify" && (
+            <div className="settings-panel-body">
+              <div className="settings-time-row">
+                <select value={ampm} onChange={(e) => setAmpm(e.target.value)}>
+                  <option value="오전">{pick(lang, "오전", "Sáng")}</option>
+                  <option value="오후">{pick(lang, "오후", "Chiều")}</option>
+                </select>
+                <select value={hour} onChange={(e) => setHour(Number(e.target.value))}>
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => <option key={h} value={h}>{h}{pick(lang, "시", "h")}</option>)}
+                </select>
+                <select value={minute} onChange={(e) => setMinute(Number(e.target.value))}>
+                  {Array.from({ length: 12 }, (_, i) => i * 5).map((m) => <option key={m} value={m}>{String(m).padStart(2, "0")}{pick(lang, "분", "")}</option>)}
+                </select>
+              </div>
+              <button type="button" className="primary-button" onClick={saveNotify}>{pick(lang, "확인", "Xác nhận")}</button>
+            </div>
+          )}
         </section>
       </div>
       <BottomNav active="home" setView={setView} />
