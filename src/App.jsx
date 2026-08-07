@@ -412,6 +412,21 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
       }
       // g.view === "teachIntro" falls through to the previous top-level stage below.
     }
+    if (session.stage === "vocab") {
+      patchSession({ stage: "context", vocabFlow: "intro" });
+      return;
+    }
+    if (session.stage === "context") {
+      if (session.vocabFlow === "intro") {
+        patchSession({ vocabFlow: "wordbook" });
+        return;
+      }
+      if (session.contextFlow === "wordbook") {
+        patchSession({ contextFlow: "intro" });
+        return;
+      }
+      // contextFlow === "intro" falls through to the previous top-level stage below.
+    }
     if (stageIndex === 0) { setView("home"); return; }
     const prev = stageOrder[stageIndex - 1];
     patchSession({ stage: prev });
