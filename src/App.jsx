@@ -4,7 +4,7 @@ import {
   CheckCircle, CircleOutline, XCircle, LightbulbIcon, SpeakerIcon,
   PlaySmallIcon, PlayCircleIcon, LockIcon, MicIcon, KeyboardIcon,
   InfoCircleIcon, CertificateIcon, MapPinIcon, HomeIcon, BookNavIcon,
-  RecordNavIcon, RecordNavIconInactive, ClockWeakIcon, HourglassIcon,
+  RecordNavIcon, RecordNavIconInactive, HourglassIcon, SettingsIcon,
 } from "./icons.jsx";
 import {
   LESSON, SESSIONS, STAGE_ORDER, SESSION1,
@@ -43,15 +43,17 @@ function LangToggle() {
 // ---------------------------------------------------------------------
 // persistence
 // ---------------------------------------------------------------------
+const DEFAULT_SETTINGS = { speechRate: 1, notifyAmPm: "오전", notifyHour: 9, notifyMinute: 0 };
+
 function loadState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      return { ...parsed, view: "home" };
+      return { ...parsed, view: "home", settings: { ...DEFAULT_SETTINGS, ...parsed.settings } };
     }
   } catch { /* ignore corrupt storage */ }
-  return { version: 1, view: "home", activeSession: 1, sessions: { 1: defaultSessionState() }, weakQueue: [] };
+  return { version: 1, view: "home", activeSession: 1, sessions: { 1: defaultSessionState() }, settings: DEFAULT_SETTINGS };
 }
 
 export default function App() {
@@ -60,6 +62,7 @@ export default function App() {
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    setSpeechRate(state.settings.speechRate);
   }, [state]);
 
   const session = state.sessions[state.activeSession] ?? defaultSessionState();
@@ -86,6 +89,7 @@ export default function App() {
           )}
           {state.view === "coverage" && <CoverageScreen setView={setView} />}
           {state.view === "report" && <ReportScreen state={state} setState={setState} setView={setView} completedCount={completedCount} />}
+          {state.view === "settings" && <SettingsScreen settings={state.settings} setState={setState} setView={setView} />}
           {state.view === "learning" && (
             <LearningScreen state={state} setState={setState} session={session} patchSession={patchSession} setView={setView} />
           )}
@@ -149,7 +153,12 @@ function HomeScreen({ state, setState, setView, completedCount }) {
       <div className="screen-scroll home-scroll">
         <header className="brand-header">
           <img alt="K-Chao" className="brand-logo" src="/assets/kchao-logo.svg" />
-          <div className="streak" aria-label="학습 연속 기록 1일"><FlameIcon size={19} /><span>1일 연속</span></div>
+          <div className="brand-header-right">
+            <div className="streak" aria-label="학습 연속 기록 1일"><FlameIcon size={19} /><span>1일 연속</span></div>
+            <button type="button" className="icon-button" aria-label="설정" onClick={() => setState((s) => ({ ...s, view: "settings" }))}>
+              <SettingsIcon size={20} />
+            </button>
+          </div>
         </header>
         <section className="lesson-hero" aria-labelledby="lesson-title">
           <div>
@@ -212,6 +221,70 @@ function HomeScreen({ state, setState, setView, completedCount }) {
 }
 
 // ---------------------------------------------------------------------
+// settings — speaking speed + notification time, KR/VT
+// ---------------------------------------------------------------------
+const SPEECH_RATE_OPTIONS = [
+  { value: 1.2, ko: "조금 빠르게", ko2: "(x1.2)", vi: "Hơi nhanh (x1.2)", desc: { ko: "원어민끼리 말하는 속도예요.", vi: "Tốc độ người bản xứ hay nói." } },
+  { value: 1, ko: "보통", ko2: "(x1.0)", vi: "Bình thường (x1.0)", desc: { ko: "평소 말하는 속도와 같아요.", vi: "Giống tốc độ nói chuyện thường ngày." } },
+  { value: 0.9, ko: "조금 느리게", ko2: "(x0.9)", vi: "Hơi chậm (x0.9)", desc: { ko: "조금 더 쉽게 들리는 속도예요.", vi: "Tốc độ nghe dễ hơn một chút." } },
+  { value: 0.8, ko: "느리게", ko2: "(x0.8)", vi: "Chậm (x0.8)", desc: { ko: "학습하기 좋은 느린 템포예요.", vi: "Tốc độ chậm, phù hợp để học." } },
+];
+
+function SettingsScreen({ settings, setState, setView }) {
+  const { lang } = useLang();
+  const [rate, setRate] = useState(settings.speechRate);
+  const [ampm, setAmpm] = useState(settings.notifyAmPm);
+  const [hour, setHour] = useState(settings.notifyHour);
+  const [minute, setMinute] = useState(settings.notifyMinute);
+
+  const saveRate = () => setState((s) => ({ ...s, settings: { ...s.settings, speechRate: rate } }));
+  const saveNotify = () => setState((s) => ({ ...s, settings: { ...s.settings, notifyAmPm: ampm, notifyHour: hour, notifyMinute: minute } }));
+
+  return (
+    <div className="screen support-screen">
+      <div className="screen-scroll">
+        <header className="learning-header">
+          <button className="icon-button" type="button" aria-label="뒤로 가기" onClick={() => setView("home")}><ArrowLeft size={24} /></button>
+          <div><h1>{pick(lang, "설정", "Cài đặt")}</h1></div>
+          <LangToggle />
+        </header>
+
+        <section className="settings-panel">
+          <h2>{pick(lang, "말하기 속도", "Tốc độ nói")}</h2>
+          <div className="settings-speed-list">
+            {SPEECH_RATE_OPTIONS.map((opt) => (
+              <button type="button" key={opt.value} className={rate === opt.value ? "active" : ""} onClick={() => setRate(opt.value)}>
+                <strong>{pick(lang, `${opt.ko} ${opt.ko2}`, opt.vi)}</strong>
+                <small>{pick(lang, opt.desc.ko, opt.desc.vi)}</small>
+              </button>
+            ))}
+          </div>
+          <button type="button" className="primary-button" onClick={saveRate}>{pick(lang, "확인", "Xác nhận")}</button>
+        </section>
+
+        <section className="settings-panel">
+          <h2>{pick(lang, "알림 시간", "Giờ nhắc học")}</h2>
+          <div className="settings-time-row">
+            <select value={ampm} onChange={(e) => setAmpm(e.target.value)}>
+              <option value="오전">{pick(lang, "오전", "Sáng")}</option>
+              <option value="오후">{pick(lang, "오후", "Chiều")}</option>
+            </select>
+            <select value={hour} onChange={(e) => setHour(Number(e.target.value))}>
+              {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => <option key={h} value={h}>{h}{pick(lang, "시", "h")}</option>)}
+            </select>
+            <select value={minute} onChange={(e) => setMinute(Number(e.target.value))}>
+              {Array.from({ length: 12 }, (_, i) => i * 5).map((m) => <option key={m} value={m}>{String(m).padStart(2, "0")}{pick(lang, "분", "")}</option>)}
+            </select>
+          </div>
+          <button type="button" className="primary-button" onClick={saveNotify}>{pick(lang, "확인", "Xác nhận")}</button>
+        </section>
+      </div>
+      <BottomNav active="home" setView={setView} />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------
 // coverage
 // ---------------------------------------------------------------------
 function CoverageScreen({ setView }) {
@@ -245,9 +318,6 @@ function ReportScreen({ state, setState, setView, completedCount }) {
   const startSession = (id) => {
     setState((s) => ({ ...s, view: "learning", activeSession: id }));
   };
-  const sessionsWithOutput = Object.entries(state.sessions).filter(
-    ([, s]) => s.speaking?.saved || s.writing?.saved
-  );
   const inProgress = Object.entries(state.sessions).filter(
     ([, s]) => !s.completed && (s.visited?.length > 1 || s.stage !== "mission")
   );
@@ -283,22 +353,6 @@ function ReportScreen({ state, setState, setView, completedCount }) {
             );
           })}
           {inProgress.length === 0 && <p className="empty-copy">진행 중인 차시가 없어요.</p>}
-        </section>
-        <section className="record-panel">
-          <div className="record-panel-title"><SpeakerIcon size={21} /><h2>저장한 산출물</h2><strong>{sessionsWithOutput.length}</strong></div>
-          {sessionsWithOutput.map(([id, s]) => (
-            <button type="button" key={id}>
-              <span>{id}차시 · 말하기 저장</span><small>{s.writing?.saved ? "쓰기 저장" : ""}</small>
-            </button>
-          ))}
-          {sessionsWithOutput.length === 0 && <p className="empty-copy">아직 저장한 결과물이 없어요.</p>}
-        </section>
-        <section className="record-panel weak-panel">
-          <div className="record-panel-title"><HourglassIcon size={21} /><h2>보완 복습</h2><strong>{state.weakQueue.length}/3</strong></div>
-          {state.weakQueue.map((w) => (
-            <div className="weak-row" key={w.id}><ClockWeakIcon size={18} /><span>{w.label}</span><small>{w.session}차시</small></div>
-          ))}
-          {state.weakQueue.length === 0 && <p className="empty-copy all-clear">보완할 항목이 없어요.</p>}
         </section>
       </div>
       <BottomNav active="report" setView={setView} />
@@ -349,14 +403,6 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
   const finishSession = () => {
     const now = new Date().toISOString();
     patchSession({ completed: true, completedAt: now });
-    if (session.grammar.retry) {
-      setState((s) => {
-        const already = s.weakQueue.some((w) => w.id === `s${s.activeSession}-grammar`);
-        if (already) return s;
-        const item = { id: `s${s.activeSession}-grammar`, session: s.activeSession, label: SESSION1.grammar.title };
-        return { ...s, weakQueue: [item, ...s.weakQueue].slice(0, 3) };
-      });
-    }
   };
 
   const canProceed = useMemo(() => {
@@ -559,10 +605,15 @@ function ScoreBarsIcon({ size = 18 }) {
   );
 }
 
+let currentSpeechRate = 1;
+function setSpeechRate(rate) {
+  currentSpeechRate = rate;
+}
 function speakKo(ko) {
   try {
     const u = new SpeechSynthesisUtterance(ko);
     u.lang = "ko-KR";
+    u.rate = currentSpeechRate;
     window.speechSynthesis?.cancel();
     window.speechSynthesis?.speak(u);
   } catch { /* speech synthesis unsupported */ }
@@ -667,7 +718,7 @@ function ContextStage({ session, patchSession }) {
     <div className="stage-section context-stage">
       <span className="stage-kicker">오늘의 단어</span>
       <h2>나라와 국적</h2>
-      <p className="stage-lead">다음 단어를 모두 학습한 후에 발음해 보세요.</p>
+      <p className="stage-lead">단어의 철자, 발음, 뜻을 학습해요.</p>
       <div className="wordbook-tabs" role="tablist" aria-label="단어장 보기 방식">
         <button type="button" role="tab" aria-selected={tab === "all"} onClick={() => setTab("all")}>전체 보기</button>
         <button type="button" role="tab" aria-selected={tab === "ko"} onClick={() => setTab("ko")}>한국어 보기</button>
@@ -753,20 +804,20 @@ const DOBIRA_COPY = {
     badge: { ko: "오늘의 단어", vi: "Từ vựng hôm nay" },
     icon: "book",
     title: { ko: "배운 단어를 문제로 확인해요", vi: "Kiểm tra từ đã học qua bài tập" },
-    lead: { ko: "짐작 → 듣기 → 보기 → 쓰기 순서로 하나씩 연습해요.", vi: "Luyện theo thứ tự: đoán – nghe – nhìn – viết." },
+    lead: { ko: "뜻 보기 > 소리 듣기 > 글자 맞추기 순서로 단어를 연습해요", vi: "Luyện từ theo thứ tự: xem nghĩa > nghe âm > ghép chữ." },
     quick: {
       label: { ko: "학습 성과", vi: "Kết quả học tập" },
-      desc: { ko: "나라와 국적 단어 15개를 자유롭게 쓸 수 있어요.", vi: "Bạn sẽ dùng thành thạo 15 từ về quốc gia và quốc tịch." },
+      desc: { ko: "나라 이름과 국적 표현을 구분할 수 있어요", vi: "Bạn sẽ phân biệt được tên quốc gia và cách nói quốc tịch." },
     },
   },
   grammarTeach: {
     badge: { ko: "문법과 표현 1", vi: "Ngữ pháp & biểu hiện 1" },
     icon: "note",
     title: { ko: "저는 N이에요/예요 표현을 배워요", vi: "Học biểu hiện 저는 N이에요/예요" },
-    lead: { ko: "받침 유무에 따라 형태가 어떻게 바뀌는지 확인해요.", vi: "Xem hình thái thay đổi thế nào theo phụ âm cuối." },
+    lead: { ko: "받침 확인 > 뜻 고르기 > 문장 만들기 순서로 연습해요", vi: "Luyện theo thứ tự: kiểm tra phụ âm cuối > chọn nghĩa > tạo câu." },
     quick: {
       label: { ko: "학습 성과", vi: "Kết quả học tập" },
-      desc: { ko: "받침 유무에 따라 '이에요/예요'를 구분할 수 있어요.", vi: "Bạn sẽ phân biệt được '이에요/예요' theo phụ âm cuối." },
+      desc: { ko: "'이에요/예요'를 구분해 이름과 국적을 말할 수 있어요", vi: "Bạn sẽ phân biệt '이에요/예요' để nói tên và quốc tịch." },
     },
   },
   grammarVideo: {
@@ -805,7 +856,7 @@ const DOBIRA_COPY = {
     lead: { ko: "최대 5문제까지 다시 연습하며 완전히 익혀요.", vi: "Luyện lại tối đa 5 câu để nắm chắc hơn." },
     quick: {
       label: { ko: "학습 성과", vi: "Kết quả học tập" },
-      desc: { ko: "헷갈렸던 부분을 확실하게 이해할 수 있어요.", vi: "Bạn sẽ hiểu rõ phần từng bị nhầm lẫn." },
+      desc: { ko: "틀린 이유를 확인하고 다시 맞힐 수 있어요", vi: "Bạn sẽ xem lý do sai và làm đúng lại." },
     },
   },
 };
@@ -1456,8 +1507,23 @@ function GrammarStage({ session, patchSession }) {
               <div className="grammar-rule-block" key={r.title}>
                 <h4>{r.title}</h4>
                 <p>{r.desc}</p>
-                <ul>{r.pairs.map((pr) => <li key={pr}>{pr}</li>)}</ul>
-                <div className="rb-examples">{r.examples.map((ex) => <span key={ex}>예: {ex}</span>)}</div>
+                <div className="batchim-pairs">
+                  {r.pairs.map((p) => (
+                    <div className="batchim-pair" key={p.word}>
+                      <div className="batchim-syllables">
+                        {[...p.word].map((ch, i) => (
+                          <span key={i} className={i === p.word.length - 1 ? "final" : ""}>{ch}</span>
+                        ))}
+                        <small className="batchim-tag">{r.hasBatchim ? "받침 O" : "받침 X"}</small>
+                      </div>
+                      <ArrowRight size={14} />
+                      <div className="batchim-result">{p.word}<mark>{p.ending}</mark></div>
+                    </div>
+                  ))}
+                </div>
+                <div className="rb-examples">
+                  {r.examples.map((ex) => <span key={ex.highlight}>예: {ex.before}<mark>{ex.highlight}</mark></span>)}
+                </div>
               </div>
             ))}
             <div className="grammar-summary">
@@ -1903,12 +1969,12 @@ function LearningReportStage({ session, state, meta, patchSession }) {
     <div className="stage-section report-stage">
       <div className="stage-kicker"><CertificateIcon size={17} /> 학습 리포트</div>
       <h2>{meta?.title}</h2>
-      <p className="stage-lead">오늘 배운 표현을 얼마나 잘 사용할 수 있는지 확인해 보세요.</p>
+      <p className="stage-lead">오늘 학습한 단어, 문법, 말하기 결과를 확인해 보세요.</p>
 
       <section className="report-hero">
         <span>{state.activeSession}차시 완료 요약</span>
         <strong>이름과 국적을 넣어 자기소개 말하기</strong>
-        <p>핵심 표현과 발음평가를 확인했어요. 필요한 항목은 아래에서 바로 다시 볼 수 있습니다.</p>
+        <p>핵심 문장과 발음을 확인했어요. 아래에서 다시 볼 수 있어요.</p>
       </section>
 
       <section className="report-stats" aria-label="학습 결과 지표">
@@ -1931,7 +1997,7 @@ function LearningReportStage({ session, state, meta, patchSession }) {
 
       <section className="report-feedback">
         <span>AI 피드백</span>
-        <p>오늘의 미션을 잘 완료했어요. 다음에는 <b>저는 베트남 사람이에요</b>처럼 이름 표현과 국적 표현을 구분해서 말해 보세요.</p>
+        <p>오늘의 자기소개 문장을 잘 완성했어요.<br />다음에는 <b>'저는 베트남 사람이에요'</b>처럼 이름 표현과 국적 표현을 구분해서 말해 보세요.</p>
       </section>
     </div>
   );

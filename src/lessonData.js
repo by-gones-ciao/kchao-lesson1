@@ -75,14 +75,28 @@ export const SESSION1 = {
         {
           title: "1. 받침이 있으면 '이에요'",
           desc: "마지막 글자에 받침이 있으면 '이에요'를 써요.",
-          pairs: ["사람 → 사람이에요", "학생 → 학생이에요"],
-          examples: ["저는 베트남 사람이에요.", "저는 학생이에요."],
+          hasBatchim: true,
+          pairs: [
+            { word: "사람", ending: "이에요" },
+            { word: "학생", ending: "이에요" },
+          ],
+          examples: [
+            { before: "저는 베트남 ", highlight: "사람이에요" },
+            { before: "저는 ", highlight: "학생이에요" },
+          ],
         },
         {
           title: "2. 받침이 없으면 '예요'",
           desc: "마지막 글자에 받침이 없으면 '예요'를 써요.",
-          pairs: ["기자 → 기자예요", "의사 → 의사예요"],
-          examples: ["저는 기자예요.", "저는 의사예요."],
+          hasBatchim: false,
+          pairs: [
+            { word: "기자", ending: "예요" },
+            { word: "의사", ending: "예요" },
+          ],
+          examples: [
+            { before: "저는 ", highlight: "기자예요" },
+            { before: "저는 ", highlight: "의사예요" },
+          ],
         },
       ],
       summary: [["받침 O", "이에요"], ["받침 X", "예요"]],
