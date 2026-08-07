@@ -798,28 +798,6 @@ function shuffle(arr) {
   return a;
 }
 
-const VOCAB_TYPES = ["vi-to-ko", "listen-choice", "listen-pick-audio", "match-pairs", "listen-blank", "vi-blank"];
-
-function buildQuestionForWord(w, type, words) {
-  const koPool = words.map((o) => o.ko);
-  const charPool = [...new Set(words.flatMap((o) => o.ko.split("")))];
-  const hasFlag = !!FLAG_COMPONENT[w.ko];
-  if ((type === "vi-to-ko" || type === "vi-blank" || type === "listen-pick-audio" || type === "match-pairs") && !hasFlag) type = "listen-choice";
-  const distractorsKo = shuffle(koPool.filter((k) => k !== w.ko)).slice(0, 3);
-  const blankIndex = Math.floor(Math.random() * w.ko.length);
-  const correctChar = w.ko[blankIndex];
-  const charDistractors = shuffle(charPool.filter((c) => c !== correctChar)).slice(0, 3);
-  let pairs = null;
-  if (type === "match-pairs") {
-    const rest = words.filter((o) => o.ko !== w.ko);
-    pairs = shuffle([w, ...shuffle(rest).slice(0, 5)]);
-  }
-  return { id: `${w.ko}-retry`, word: w, type, distractorsKo, blankIndex, correctChar, charDistractors, pairs };
-}
-
-function buildQuizQuestions(words) {
-  return words.map((w, i) => ({ ...buildQuestionForWord(w, VOCAB_TYPES[i % VOCAB_TYPES.length], words), id: `${w.ko}-${i}` }));
-}
 
 // ---------------------------------------------------------------------
 // purpose-guide UI — "도비라" stage-intro card + per-type micro banner,
@@ -985,142 +963,32 @@ const QUIZ_PROMPTS = {
   "vi-to-ko": "단어에 맞는 한국어를 고르세요",
   "listen-choice": "소리를 듣고 단어를 고르세요",
   "listen-pick-audio": "단어를 보고 알맞은 소리를 고르세요",
-  "match-pairs": "단어의 짝을 맞춰 보세요",
-  "listen-blank": "소리를 듣고 빈칸을 채우세요",
-  "vi-blank": "그림에 맞는 단어를 직접 완성하세요",
+  "ko-to-vi": "한국어와 베트남어 뜻을 연결하세요",
+  "listen-assemble": "소리를 듣고 글자 카드를 순서대로 놓으세요",
+  "recall-type": "뜻을 보고 한국어로 쓰세요",
 };
 
-function MatchPairsQuestion({ pairs, onDone }) {
-  const leftItems = useMemo(() => shuffle(pairs.map((p) => ({ ko: p.ko }))), [pairs]);
-  const rightItems = useMemo(() => shuffle(pairs.map((p) => ({ vi: p.vi, ko: p.ko }))), [pairs]);
-  const [selLeft, setSelLeft] = useState(null);
-  const [matched, setMatched] = useState([]);
-  const [wrongPair, setWrongPair] = useState(null);
-
-  useEffect(() => {
-    if (matched.length === pairs.length) {
-      const t = setTimeout(onDone, 600);
-      return () => clearTimeout(t);
-    }
-  }, [matched.length]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const pickLeft = (ko) => {
-    if (matched.includes(ko)) return;
-    setSelLeft(ko);
-  };
-  const pickRight = (item) => {
-    if (!selLeft || matched.includes(item.ko)) return;
-    if (item.ko === selLeft) {
-      setMatched((m) => [...m, item.ko]);
-      setSelLeft(null);
-    } else {
-      setWrongPair(item.ko);
-      setTimeout(() => setWrongPair(null), 400);
-    }
-  };
-
-  return (
-    <div className="match-pairs-grid">
-      <div className="match-col">
-        {leftItems.map(({ ko }) => (
-          <button key={ko} type="button"
-            className={`match-tile ${matched.includes(ko) ? "matched" : ""} ${selLeft === ko ? "selected" : ""}`}
-            disabled={matched.includes(ko)} onClick={() => pickLeft(ko)}>{ko}</button>
-        ))}
-      </div>
-      <div className="match-col">
-        {rightItems.map((item) => (
-          <button key={item.ko} type="button"
-            className={`match-tile ${matched.includes(item.ko) ? "matched" : ""} ${wrongPair === item.ko ? "wrong" : ""}`}
-            disabled={matched.includes(item.ko)} onClick={() => pickRight(item)}>{item.vi}</button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// single-blank fill: word-tile pool (with 글자/키보드 toggle + hint) or plain
-// keyboard entry, used for the "listen-blank" vocab type
-function BlankChoiceQuestion({ prefix, suffix, answer, distractors, advance, onWrong, speaker }) {
-  const [selected, setSelected] = useState(null);
-  const [mode, setMode] = useState("tile");
-  const [typed, setTyped] = useState("");
-  const [typedWrong, setTypedWrong] = useState(false);
-  const [hintOn, setHintOn] = useState(false);
-  const options = useMemo(() => shuffle([answer, ...distractors]), [answer, distractors]);
-
-  const pick = (opt) => {
-    if (selected) return;
-    const ok = opt === answer;
-    setSelected(opt);
-    if (!ok) onWrong?.();
-    setTimeout(advance, ok ? 650 : 1100);
-  };
-  const hint = () => {
-    setHintOn(true);
-    setTimeout(() => setHintOn(false), 1200);
-  };
-  const submitTyped = () => {
-    if (selected) return;
-    const ok = typed.trim() === answer;
-    if (ok) { setSelected(answer); setTimeout(advance, 650); }
-    else { setTypedWrong(true); onWrong?.(); setTimeout(() => setTypedWrong(false), 500); }
-  };
-
-  return (
-    <>
-      {speaker ? (
-        <div className="speak-blank-box">
-          <button type="button" className="speak-blank-icon" aria-label="다시 듣기" onClick={speaker}><SpeakerIcon size={18} /></button>
-          <div className="blank-sentence-line">{prefix}<span className="gap">{selected || ""}</span>{suffix}</div>
-        </div>
-      ) : (
-        <div className="blank-sentence-line">{prefix}<span className="gap">{selected || ""}</span>{suffix}</div>
-      )}
-      {mode === "tile" ? (
-        <div className="tile-pool">
-          {options.map((opt) => {
-            let cls = "";
-            if (selected === opt) cls = opt === answer ? "used" : "wrong";
-            if (hintOn && opt === answer && !selected) cls += " hinted";
-            return (
-              <button key={opt} type="button" disabled={!!selected} className={cls} onClick={() => pick(opt)}>{opt}</button>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="listen-type-actions">
-          <input type="text" className={`listen-type-input ${typedWrong ? "wrong" : ""}`} value={typed}
-            placeholder="정답을 입력하세요" disabled={!!selected} onChange={(e) => setTyped(e.target.value)} />
-          <button type="button" className="secondary-button" disabled={!typed.trim() || !!selected} onClick={submitTyped}>확인</button>
-        </div>
-      )}
-      <div className="mode-hint-row"><ModeToggle mode={mode} setMode={setMode} /></div>
-      {mode === "tile" && !selected && <HintButton onHint={hint} />}
-    </>
-  );
-}
-
 function VocabStage({ patchSession, onComplete, onBack }) {
-  const words = SESSION1.context.words;
-  const questions = useMemo(() => buildQuizQuestions(words), [words]);
+  const items = SESSION1.context.vocabQuizItems;
   const [qIndex, setQIndex] = useState(0);
   const [selected, setSelected] = useState(null);
+  const [typed, setTyped] = useState("");
   const wrongList = useRef([]);
-  const q = questions[qIndex];
+  const item = items[qIndex];
 
   useEffect(() => {
     setSelected(null);
-    if (q.type === "listen-choice" || q.type === "listen-blank") speakKo(q.word.ko);
+    setTyped("");
+    if (item.type === "listen-choice") speakKo(item.ko);
   }, [qIndex]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const markWrong = () => { wrongList.current.push({ ko: q.word.ko, type: q.type }); };
+  const markWrong = () => { wrongList.current.push({ ko: item.ko, type: item.type }); };
   const finish = () => {
-    patchSession({ vocabTouched: words.map((w) => w.ko), vocabWrong: wrongList.current.slice(0, 8) });
+    patchSession({ vocabTouched: SESSION1.context.words.map((w) => w.ko), vocabWrong: wrongList.current.slice(0, 8) });
     onComplete();
   };
   const advance = () => {
-    if (qIndex + 1 < questions.length) setQIndex(qIndex + 1);
+    if (qIndex + 1 < items.length) setQIndex(qIndex + 1);
     else finish();
   };
   const goPrev = () => {
@@ -1133,8 +1001,15 @@ function VocabStage({ patchSession, onComplete, onBack }) {
     if (!isCorrect) markWrong();
     setTimeout(advance, isCorrect ? 650 : 1100);
   };
+  const submitRecall = () => {
+    if (selected) return;
+    const ok = typed.trim() === item.ko;
+    setSelected(ok ? item.ko : typed);
+    if (!ok) markWrong();
+    setTimeout(advance, ok ? 650 : 1100);
+  };
 
-  const pct = Math.round(((qIndex + 1) / questions.length) * 100);
+  const pct = Math.round(((qIndex + 1) / items.length) * 100);
 
   return (
     <div className="pron-overlay" role="dialog" aria-modal="true" aria-label="어휘 퀴즈">
@@ -1143,18 +1018,18 @@ function VocabStage({ patchSession, onComplete, onBack }) {
         <div className="pron-progress"><span style={{ width: `${pct}%` }} /></div>
         <button type="button" className="pron-close" aria-label="퀴즈 건너뛰기" onClick={finish}><XCircle size={26} /></button>
       </div>
-      <p className="pron-title">{QUIZ_PROMPTS[q.type]}</p>
+      <p className="pron-title">{QUIZ_PROMPTS[item.type]}</p>
 
-      {q.type === "vi-to-ko" && (
+      {item.type === "vi-to-ko" && (
         <>
-          <div className="quiz-prompt-box">{q.word.vi}</div>
+          <div className="quiz-prompt-box">{item.vi}</div>
           <div className="quiz-flag-grid">
-            {shuffle([q.word.ko, ...q.distractorsKo]).map((opt) => {
+            {shuffle(item.choices).map((opt) => {
               let cls = "";
-              if (selected === opt) cls = opt === q.word.ko ? "correct" : "wrong";
+              if (selected === opt) cls = opt === item.answer ? "correct" : "wrong";
               return (
                 <button key={opt} type="button" className={`quiz-flag-tile ${cls}`} disabled={!!selected}
-                  onClick={() => choose(opt, opt === q.word.ko)}>
+                  onClick={() => choose(opt, opt === item.answer)}>
                   <FlagIconFor ko={opt} className="flag" /><strong>{opt}</strong>
                 </button>
               );
@@ -1163,17 +1038,17 @@ function VocabStage({ patchSession, onComplete, onBack }) {
         </>
       )}
 
-      {q.type === "listen-choice" && (
+      {item.type === "listen-choice" && (
         <>
-          <button type="button" className="quiz-speak-btn" aria-label="다시 듣기" onClick={() => speakKo(q.word.ko)}>
+          <button type="button" className="quiz-speak-btn" aria-label="다시 듣기" onClick={() => speakKo(item.ko)}>
             <SpeakerIcon size={26} />
           </button>
           <div className="choice-list">
-            {shuffle([q.word.ko, ...q.distractorsKo]).map((opt) => {
+            {shuffle(item.choices).map((opt) => {
               let cls = "";
-              if (selected === opt) cls = opt === q.word.ko ? "correct" : "wrong";
+              if (selected === opt) cls = opt === item.answer ? "correct" : "wrong";
               return (
-                <button key={opt} type="button" className={cls} disabled={!!selected} onClick={() => choose(opt, opt === q.word.ko)}>
+                <button key={opt} type="button" className={cls} disabled={!!selected} onClick={() => choose(opt, opt === item.answer)}>
                   <span>{opt}</span>
                 </button>
               );
@@ -1182,16 +1057,16 @@ function VocabStage({ patchSession, onComplete, onBack }) {
         </>
       )}
 
-      {q.type === "listen-pick-audio" && (
+      {item.type === "listen-pick-audio" && (
         <>
-          <div className="quiz-prompt-box">{q.word.ko}</div>
+          <div className="quiz-prompt-box">{item.ko}</div>
           <div className="quiz-audio-grid">
-            {shuffle([q.word.ko, ...q.distractorsKo]).map((opt) => {
+            {shuffle(item.choices).map((opt) => {
               let cls = "";
-              if (selected === opt) cls = opt === q.word.ko ? "correct" : "wrong";
+              if (selected === opt) cls = opt === item.answer ? "correct" : "wrong";
               return (
                 <button key={opt} type="button" className={cls} disabled={!!selected}
-                  onClick={() => { speakKo(opt); }} onDoubleClick={() => choose(opt, opt === q.word.ko)}>
+                  onClick={() => { speakKo(opt); }} onDoubleClick={() => choose(opt, opt === item.answer)}>
                   <SpeakerIcon size={22} />
                 </button>
               );
@@ -1205,23 +1080,36 @@ function VocabStage({ patchSession, onComplete, onBack }) {
         </>
       )}
 
-      {q.type === "match-pairs" && q.pairs && (
-        <MatchPairsQuestion pairs={q.pairs} onDone={advance} />
-      )}
-
-      {q.type === "listen-blank" && (
-        <BlankChoiceQuestion prefix={q.word.ko.slice(0, q.blankIndex)} suffix={q.word.ko.slice(q.blankIndex + 1)}
-          answer={q.correctChar} distractors={q.charDistractors} advance={advance} speaker={() => speakKo(q.word.ko)} onWrong={markWrong} />
-      )}
-
-      {q.type === "vi-blank" && (
+      {item.type === "ko-to-vi" && (
         <>
-          <div className="quiz-image-card">
-            <FlagIconFor ko={q.word.ko} className="flag" />
-            <strong>{q.word.vi}</strong>
+          <div className="quiz-prompt-box">{item.ko}</div>
+          <div className="choice-list">
+            {shuffle(item.choices).map((opt) => {
+              let cls = "";
+              if (selected === opt) cls = opt === item.answer ? "correct" : "wrong";
+              return (
+                <button key={opt} type="button" disabled={!!selected} className={cls} onClick={() => choose(opt, opt === item.answer)}>
+                  <span>{opt}</span>
+                </button>
+              );
+            })}
           </div>
-          <SentenceBuilder targetTokens={q.word.ko.split("")} joinWith=""
-            poolExtra={shuffle(q.charDistractors).slice(0, 2)} onDone={advance} onWrong={markWrong} />
+        </>
+      )}
+
+      {item.type === "listen-assemble" && (
+        <SentenceBuilder targetTokens={item.tiles} joinWith="" poolExtra={item.distractorTiles}
+          speaker={() => speakKo(item.ko)} onDone={advance} onWrong={markWrong} />
+      )}
+
+      {item.type === "recall-type" && (
+        <>
+          <div className="quiz-prompt-box">{item.vi}</div>
+          <div className="listen-type-actions">
+            <input type="text" className={`listen-type-input ${selected && selected !== item.ko ? "wrong" : ""}`} value={typed}
+              placeholder="정답을 입력하세요" disabled={!!selected} onChange={(e) => setTyped(e.target.value)} />
+            <button type="button" className="secondary-button" disabled={!typed.trim() || !!selected} onClick={submitRecall}>확인</button>
+          </div>
         </>
       )}
 
@@ -1353,53 +1241,45 @@ function SentenceBuilder({ targetTokens, poolExtra, joinWith = "", onDone, onWro
 }
 
 // ---------------------------------------------------------------------
-// grammar sentence quiz — 7-step exercise sequence ("문제 풀기")
+// grammar sentence quiz — 10-item Act sequence ("문제 풀기")
 // ---------------------------------------------------------------------
-function GrammarSentenceQuiz({ data, onAllDone, onExit }) {
-  const STEPS = ["blank", "translate", "construct", "listenWord", "listenChar"];
-  const PROMPTS = {
-    blank: "빈칸에 들어갈 말을 선택하세요",
-    translate: "올바른 한국어 문장을 고르세요.",
-    construct: "다음 문장을 해석하세요.",
-    listenWord: "문장을 듣고 단어를 배열하세요.",
-    listenChar: "문장을 듣고 글자를 배열하세요.",
-  };
+const GRAMMAR_QUIZ_PROMPTS = {
+  blank: "빈칸에 들어갈 말을 선택하세요",
+  translate: "문장의 뜻을 고르세요.",
+  construct: "단어를 배열하세요.",
+  listenWord: "들은 문장을 단어 카드로 구성하세요.",
+  listenChar: "들은 표현을 음절 카드로 구성하세요.",
+};
+
+function GrammarSentenceQuiz({ items, onAllDone, onExit }) {
   const [step, setStep] = useState(0);
   const [selected, setSelected] = useState(null);
-  const wrongKinds = useRef([]);
+  const wrongIndexes = useRef([]);
 
-  const kind = STEPS[step];
-  const totalSteps = STEPS.length;
+  const item = items[step];
+  const totalSteps = items.length;
 
   useEffect(() => {
     setSelected(null);
-    if (kind === "listenWord" || kind === "listenChar") speakKo(data.target.ko);
+    if (item.type === "listenWord" || item.type === "listenChar") speakKo(item.ko);
   }, [step]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const addWrong = (k) => {
-    if (!wrongKinds.current.includes(k)) wrongKinds.current.push(k);
+  const addWrong = () => {
+    if (!wrongIndexes.current.includes(step)) wrongIndexes.current.push(step);
   };
 
   const advance = () => {
     if (step + 1 < totalSteps) setStep(step + 1);
-    else onAllDone(wrongKinds.current);
+    else onAllDone(wrongIndexes.current);
   };
   const goPrev = () => {
     if (step > 0) setStep(step - 1);
     else onExit();
   };
-  const chooseBlank = (choice) => {
+  const choose = (choice, ok) => {
     if (selected) return;
     setSelected(choice);
-    const ok = choice === data.blank.answer;
-    if (!ok) addWrong("blank");
-    setTimeout(advance, ok ? 650 : 1100);
-  };
-  const chooseTranslate = (choice) => {
-    if (selected) return;
-    setSelected(choice);
-    const ok = choice === data.target.ko;
-    if (!ok) addWrong("translate");
+    if (!ok) addWrong();
     setTimeout(advance, ok ? 650 : 1100);
   };
   const pct = Math.round(((step + 1) / totalSteps) * 100);
@@ -1409,24 +1289,22 @@ function GrammarSentenceQuiz({ data, onAllDone, onExit }) {
       <div className="pron-topbar">
         <button type="button" className="pron-back" aria-label="이전 화면" onClick={goPrev}><ArrowLeft size={22} /></button>
         <div className="pron-progress"><span style={{ width: `${pct}%` }} /></div>
-        <button type="button" className="pron-close" aria-label="문제 건너뛰기" onClick={() => onAllDone(wrongKinds.current)}><XCircle size={26} /></button>
+        <button type="button" className="pron-close" aria-label="문제 건너뛰기" onClick={() => onAllDone(wrongIndexes.current)}><XCircle size={26} /></button>
       </div>
 
-      {kind && (
-        <>
-      <p className="pron-title">{PROMPTS[kind]}</p>
+      <p className="pron-title">{GRAMMAR_QUIZ_PROMPTS[item.type]}</p>
 
-      {kind === "blank" && (
+      {item.type === "blank" && (
         <>
           <div className="quiz-prompt-box sentence-blank-box">
-            {data.blank.prefix}<span className="blank-slot">{selected || " "}</span>{data.blank.suffix}
+            {item.prefix}<span className="blank-slot">{selected || " "}</span>{item.suffix}
           </div>
           <div className="choice-list">
-            {data.blank.choices.map((c) => {
+            {item.choices.map((c) => {
               let cls = "";
-              if (selected === c) cls = c === data.blank.answer ? "correct" : "wrong";
+              if (selected === c) cls = c === item.answer ? "correct" : "wrong";
               return (
-                <button key={c} type="button" disabled={!!selected} className={cls} onClick={() => chooseBlank(c)}>
+                <button key={c} type="button" disabled={!!selected} className={cls} onClick={() => choose(c, c === item.answer)}>
                   <span>{c}</span>
                 </button>
               );
@@ -1435,15 +1313,15 @@ function GrammarSentenceQuiz({ data, onAllDone, onExit }) {
         </>
       )}
 
-      {kind === "translate" && (
+      {item.type === "translate" && (
         <>
-          <div className="quiz-prompt-box">{data.target.vi}</div>
+          <div className="quiz-prompt-box">{item.ko}</div>
           <div className="choice-list">
-            {shuffle([data.target.ko, data.translateDistractor]).map((c) => {
+            {shuffle(item.choices).map((c) => {
               let cls = "";
-              if (selected === c) cls = c === data.target.ko ? "correct" : "wrong";
+              if (selected === c) cls = c === item.answer ? "correct" : "wrong";
               return (
-                <button key={c} type="button" disabled={!!selected} className={cls} onClick={() => chooseTranslate(c)}>
+                <button key={c} type="button" disabled={!!selected} className={cls} onClick={() => choose(c, c === item.answer)}>
                   <span>{c}</span>
                 </button>
               );
@@ -1452,24 +1330,21 @@ function GrammarSentenceQuiz({ data, onAllDone, onExit }) {
         </>
       )}
 
-      {kind === "construct" && (
+      {item.type === "construct" && (
         <>
-          <div className="quiz-prompt-box">{data.positive.vi}</div>
-          <SentenceBuilder targetTokens={data.positive.words} joinWith=" "
-            poolExtra={data.positive.wordDistractors} onDone={advance} onWrong={() => addWrong("construct")} />
+          <div className="quiz-prompt-box">{item.vi}</div>
+          <SentenceBuilder targetTokens={item.tiles} joinWith=" " poolExtra={[]} onDone={advance} onWrong={addWrong} />
         </>
       )}
 
-      {kind === "listenWord" && (
-        <SentenceBuilder targetTokens={data.target.words} joinWith=" " speaker={() => speakKo(data.target.ko)}
-          poolExtra={data.target.wordDistractors} onDone={advance} onWrong={() => addWrong("listenWord")} />
+      {item.type === "listenWord" && (
+        <SentenceBuilder targetTokens={item.tiles} joinWith=" " speaker={() => speakKo(item.ko)}
+          poolExtra={[]} onDone={advance} onWrong={addWrong} />
       )}
 
-      {kind === "listenChar" && (
-        <SentenceBuilder targetTokens={data.target.chars} joinWith="" speaker={() => speakKo(data.target.ko)}
-          poolExtra={[]} onDone={advance} onWrong={() => addWrong("listenChar")} />
-      )}
-        </>
+      {item.type === "listenChar" && (
+        <SentenceBuilder targetTokens={item.tiles} joinWith="" speaker={() => speakKo(item.ko)}
+          poolExtra={[]} onDone={advance} onWrong={addWrong} />
       )}
 
       <button type="button" className="quiz-skip-btn" disabled={!!selected} onClick={advance}>
@@ -1571,7 +1446,7 @@ function GrammarStage({ session, patchSession }) {
 
       {view === "quiz" && (
         <GrammarSentenceQuiz
-          data={g.sentenceQuiz}
+          items={g.sentenceQuiz}
           onAllDone={(wrongKinds) => patchSession((prev) => ({
             grammar: { ...prev.grammar, passed: true, view: "speakingIntro", speakingDone: false, speakingIndex: 0, wrongKinds },
           }))}
@@ -1870,18 +1745,22 @@ function WritingStage({ session, patchSession }) {
 // this 차시 (max 5), shown once as its own self-contained quiz overlay
 // ---------------------------------------------------------------------
 function RetryStage({ session, patchSession, onDone }) {
-  const words = SESSION1.context.words;
-  const g = SESSION1.grammar.sentenceQuiz;
+  const vocabItems = SESSION1.context.vocabQuizItems;
+  const grammarItems = SESSION1.grammar.sentenceQuiz;
   const retryQueue = useMemo(() => {
-    const vocabItems = (session.vocabWrong || [])
+    const vq = (session.vocabWrong || [])
       .filter((v, i, arr) => arr.findIndex((o) => o.ko === v.ko && o.type === v.type) === i)
-      .map((v) => ({ source: "vocab", ...v }));
-    const grammarItems = [...new Set(session.grammar.wrongKinds || [])].map((kind) => ({ source: "grammar", kind }));
-    return [...vocabItems, ...grammarItems].slice(0, 5);
-  }, [session.vocabWrong, session.grammar.wrongKinds]);
+      .map((v) => ({ source: "vocab", item: vocabItems.find((it) => it.ko === v.ko && it.type === v.type) }))
+      .filter((v) => v.item);
+    const gq = [...new Set(session.grammar.wrongKinds || [])]
+      .map((idx) => ({ source: "grammar", item: grammarItems[idx] }))
+      .filter((v) => v.item);
+    return [...vq, ...gq].slice(0, 5);
+  }, [session.vocabWrong, session.grammar.wrongKinds]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState(null);
+  const [typed, setTyped] = useState("");
 
   useEffect(() => {
     if (retryQueue.length === 0) onDone();
@@ -1889,6 +1768,7 @@ function RetryStage({ session, patchSession, onDone }) {
 
   useEffect(() => {
     setSelected(null);
+    setTyped("");
   }, [index]);
 
   if (retryQueue.length === 0) return null;
@@ -1901,13 +1781,16 @@ function RetryStage({ session, patchSession, onDone }) {
     );
   }
 
-  const item = retryQueue[index];
+  const { source, item } = retryQueue[index];
   const advance = () => { if (index + 1 < retryQueue.length) setIndex(index + 1); else onDone(); };
   const choose = (value, ok) => { if (selected) return; setSelected(value); setTimeout(advance, ok ? 650 : 1100); };
+  const submitRecall = () => {
+    if (selected) return;
+    const ok = typed.trim() === item.ko;
+    setSelected(ok ? item.ko : typed);
+    setTimeout(advance, ok ? 650 : 1100);
+  };
   const pct = Math.round(((index + 1) / retryQueue.length) * 100);
-
-  let vq = null;
-  if (item.source === "vocab") vq = buildQuestionForWord(words.find((w) => w.ko === item.ko), item.type, words);
 
   return (
     <div className="pron-overlay" role="dialog" aria-modal="true" aria-label="오답 다시 풀기">
@@ -1919,77 +1802,101 @@ function RetryStage({ session, patchSession, onDone }) {
       </div>
       <div className="stage-kicker retry-kicker">오답 다시 풀기 · {index + 1}/{retryQueue.length}</div>
 
-      {item.source === "vocab" && vq.type === "vi-to-ko" && (
+      {source === "vocab" && item.type === "vi-to-ko" && (
         <>
           <p className="pron-title">단어에 맞는 한국어를 고르세요</p>
-          <div className="quiz-prompt-box">{vq.word.vi}</div>
+          <div className="quiz-prompt-box">{item.vi}</div>
           <div className="quiz-flag-grid">
-            {shuffle([vq.word.ko, ...vq.distractorsKo]).map((opt) => {
-              let cls = ""; if (selected === opt) cls = opt === vq.word.ko ? "correct" : "wrong";
-              return <button key={opt} type="button" className={`quiz-flag-tile ${cls}`} disabled={!!selected} onClick={() => choose(opt, opt === vq.word.ko)}><FlagIconFor ko={opt} className="flag" /><strong>{opt}</strong></button>;
+            {shuffle(item.choices).map((opt) => {
+              let cls = ""; if (selected === opt) cls = opt === item.answer ? "correct" : "wrong";
+              return <button key={opt} type="button" className={`quiz-flag-tile ${cls}`} disabled={!!selected} onClick={() => choose(opt, opt === item.answer)}><FlagIconFor ko={opt} className="flag" /><strong>{opt}</strong></button>;
             })}
           </div>
         </>
       )}
-      {item.source === "vocab" && (vq.type === "listen-choice" || vq.type === "listen-pick-audio") && (
+      {source === "vocab" && item.type === "listen-choice" && (
         <>
           <p className="pron-title">소리를 듣고 단어를 고르세요</p>
-          <button type="button" className="quiz-speak-btn" aria-label="다시 듣기" onClick={() => speakKo(vq.word.ko)}><SpeakerIcon size={26} /></button>
+          <button type="button" className="quiz-speak-btn" aria-label="다시 듣기" onClick={() => speakKo(item.ko)}><SpeakerIcon size={26} /></button>
           <div className="choice-list">
-            {shuffle([vq.word.ko, ...vq.distractorsKo]).map((opt) => {
-              let cls = ""; if (selected === opt) cls = opt === vq.word.ko ? "correct" : "wrong";
-              return <button key={opt} type="button" className={cls} disabled={!!selected} onClick={() => choose(opt, opt === vq.word.ko)}><span>{opt}</span></button>;
+            {shuffle(item.choices).map((opt) => {
+              let cls = ""; if (selected === opt) cls = opt === item.answer ? "correct" : "wrong";
+              return <button key={opt} type="button" className={cls} disabled={!!selected} onClick={() => choose(opt, opt === item.answer)}><span>{opt}</span></button>;
             })}
           </div>
         </>
       )}
-      {item.source === "vocab" && vq.type === "listen-blank" && (
-        <><p className="pron-title">소리를 듣고 빈칸을 채우세요</p>
-          <BlankChoiceQuestion prefix={vq.word.ko.slice(0, vq.blankIndex)} suffix={vq.word.ko.slice(vq.blankIndex + 1)}
-            answer={vq.correctChar} distractors={vq.charDistractors} advance={advance} speaker={() => speakKo(vq.word.ko)} /></>
-      )}
-      {item.source === "vocab" && vq.type === "vi-blank" && (
+      {source === "vocab" && item.type === "listen-pick-audio" && (
         <>
-          <p className="pron-title">그림에 맞는 단어를 직접 완성하세요</p>
-          <div className="quiz-image-card"><FlagIconFor ko={vq.word.ko} className="flag" /><strong>{vq.word.vi}</strong></div>
-          <SentenceBuilder targetTokens={vq.word.ko.split("")} joinWith="" poolExtra={shuffle(vq.charDistractors).slice(0, 2)} onDone={advance} onWrong={() => {}} />
+          <p className="pron-title">단어를 보고 알맞은 소리를 고르세요</p>
+          <div className="quiz-prompt-box">{item.ko}</div>
+          <div className="quiz-audio-grid">
+            {shuffle(item.choices).map((opt) => {
+              let cls = ""; if (selected === opt) cls = opt === item.answer ? "correct" : "wrong";
+              return <button key={opt} type="button" className={cls} disabled={!!selected} onClick={() => speakKo(opt)} onDoubleClick={() => choose(opt, opt === item.answer)}><SpeakerIcon size={22} /></button>;
+            })}
+          </div>
         </>
       )}
-      {item.source === "vocab" && vq.type === "match-pairs" && vq.pairs && (
-        <><p className="pron-title">단어의 짝을 맞춰 보세요</p><MatchPairsQuestion pairs={vq.pairs} onDone={advance} /></>
+      {source === "vocab" && item.type === "ko-to-vi" && (
+        <>
+          <p className="pron-title">한국어와 베트남어 뜻을 연결하세요</p>
+          <div className="quiz-prompt-box">{item.ko}</div>
+          <div className="choice-list">
+            {shuffle(item.choices).map((opt) => {
+              let cls = ""; if (selected === opt) cls = opt === item.answer ? "correct" : "wrong";
+              return <button key={opt} type="button" disabled={!!selected} className={cls} onClick={() => choose(opt, opt === item.answer)}><span>{opt}</span></button>;
+            })}
+          </div>
+        </>
+      )}
+      {source === "vocab" && item.type === "listen-assemble" && (
+        <><p className="pron-title">소리를 듣고 글자 카드를 순서대로 놓으세요</p>
+          <SentenceBuilder targetTokens={item.tiles} joinWith="" poolExtra={item.distractorTiles} speaker={() => speakKo(item.ko)} onDone={advance} onWrong={() => {}} /></>
+      )}
+      {source === "vocab" && item.type === "recall-type" && (
+        <>
+          <p className="pron-title">뜻을 보고 한국어로 쓰세요</p>
+          <div className="quiz-prompt-box">{item.vi}</div>
+          <div className="listen-type-actions">
+            <input type="text" className={`listen-type-input ${selected && selected !== item.ko ? "wrong" : ""}`} value={typed}
+              placeholder="정답을 입력하세요" disabled={!!selected} onChange={(e) => setTyped(e.target.value)} />
+            <button type="button" className="secondary-button" disabled={!typed.trim() || !!selected} onClick={submitRecall}>확인</button>
+          </div>
+        </>
       )}
 
-      {item.source === "grammar" && item.kind === "blank" && (
+      {source === "grammar" && item.type === "blank" && (
         <>
           <p className="pron-title">빈칸에 들어갈 말을 선택하세요</p>
-          <div className="quiz-prompt-box sentence-blank-box">{g.blank.prefix}<span className="blank-slot">{selected || " "}</span>{g.blank.suffix}</div>
+          <div className="quiz-prompt-box sentence-blank-box">{item.prefix}<span className="blank-slot">{selected || " "}</span>{item.suffix}</div>
           <div className="choice-list">
-            {g.blank.choices.map((c) => { let cls = ""; if (selected === c) cls = c === g.blank.answer ? "correct" : "wrong";
-              return <button key={c} type="button" disabled={!!selected} className={cls} onClick={() => choose(c, c === g.blank.answer)}><span>{c}</span></button>; })}
+            {item.choices.map((c) => { let cls = ""; if (selected === c) cls = c === item.answer ? "correct" : "wrong";
+              return <button key={c} type="button" disabled={!!selected} className={cls} onClick={() => choose(c, c === item.answer)}><span>{c}</span></button>; })}
           </div>
         </>
       )}
-      {item.source === "grammar" && item.kind === "translate" && (
+      {source === "grammar" && item.type === "translate" && (
         <>
-          <p className="pron-title">올바른 한국어 문장을 고르세요.</p>
-          <div className="quiz-prompt-box">{g.target.vi}</div>
+          <p className="pron-title">문장의 뜻을 고르세요.</p>
+          <div className="quiz-prompt-box">{item.ko}</div>
           <div className="choice-list">
-            {shuffle([g.target.ko, g.translateDistractor]).map((c) => { let cls = ""; if (selected === c) cls = c === g.target.ko ? "correct" : "wrong";
-              return <button key={c} type="button" disabled={!!selected} className={cls} onClick={() => choose(c, c === g.target.ko)}><span>{c}</span></button>; })}
+            {shuffle(item.choices).map((c) => { let cls = ""; if (selected === c) cls = c === item.answer ? "correct" : "wrong";
+              return <button key={c} type="button" disabled={!!selected} className={cls} onClick={() => choose(c, c === item.answer)}><span>{c}</span></button>; })}
           </div>
         </>
       )}
-      {item.source === "grammar" && item.kind === "construct" && (
-        <><p className="pron-title">다음 문장을 해석하세요.</p><div className="quiz-prompt-box">{g.positive.vi}</div>
-          <SentenceBuilder targetTokens={g.positive.words} joinWith=" " poolExtra={g.positive.wordDistractors} onDone={advance} onWrong={() => {}} /></>
+      {source === "grammar" && item.type === "construct" && (
+        <><p className="pron-title">단어를 배열하세요.</p><div className="quiz-prompt-box">{item.vi}</div>
+          <SentenceBuilder targetTokens={item.tiles} joinWith=" " poolExtra={[]} onDone={advance} onWrong={() => {}} /></>
       )}
-      {item.source === "grammar" && item.kind === "listenWord" && (
-        <><p className="pron-title">문장을 듣고 단어를 배열하세요.</p>
-          <SentenceBuilder targetTokens={g.target.words} joinWith=" " speaker={() => speakKo(g.target.ko)} poolExtra={g.target.wordDistractors} onDone={advance} onWrong={() => {}} /></>
+      {source === "grammar" && item.type === "listenWord" && (
+        <><p className="pron-title">들은 문장을 단어 카드로 구성하세요.</p>
+          <SentenceBuilder targetTokens={item.tiles} joinWith=" " speaker={() => speakKo(item.ko)} poolExtra={[]} onDone={advance} onWrong={() => {}} /></>
       )}
-      {item.source === "grammar" && item.kind === "listenChar" && (
-        <><p className="pron-title">문장을 듣고 글자를 배열하세요.</p>
-          <SentenceBuilder targetTokens={g.target.chars} joinWith="" speaker={() => speakKo(g.target.ko)} poolExtra={[]} onDone={advance} onWrong={() => {}} /></>
+      {source === "grammar" && item.type === "listenChar" && (
+        <><p className="pron-title">들은 표현을 음절 카드로 구성하세요.</p>
+          <SentenceBuilder targetTokens={item.tiles} joinWith="" speaker={() => speakKo(item.ko)} poolExtra={[]} onDone={advance} onWrong={() => {}} /></>
       )}
 
       <button type="button" className="quiz-skip-btn" disabled={!!selected} onClick={advance}>이 문제 건너뛰기</button>
@@ -2017,7 +1924,7 @@ function LearningReportStage({ session, state, meta, patchSession }) {
       <section className="report-stats" aria-label="학습 결과 지표">
         <div className="report-stat"><BookIcon size={22} /><span>학습 어휘</span><strong>{SESSION1.context.words.length}개</strong></div>
         <div className="report-stat"><MicIcon size={22} /><span>발음평가</span><strong>{speakingCount}/{speakingCount}</strong></div>
-        <div className="report-stat"><CheckCircle size={22} /><span>확인 문제</span><strong>5/5</strong></div>
+        <div className="report-stat"><CheckCircle size={22} /><span>확인 문제</span><strong>10/10</strong></div>
       </section>
 
       <section className="report-actions" aria-label="다시 보기">

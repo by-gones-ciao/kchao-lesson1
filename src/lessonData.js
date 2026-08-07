@@ -57,6 +57,20 @@ export const SESSION1 = {
       { ko: "한국 사람", vi: "người Hàn Quốc" },
       { ko: "일본 사람", vi: "người Nhật Bản" },
     ],
+    // exact 10-item vocab Act sequence for 1과 1차시, from
+    // K-Chao_초급1_1과_ACT_어휘6문법5_차시별10문항_최종본_260807.xlsx (sheet 02_어휘_10문항)
+    vocabQuizItems: [
+      { type: "vi-to-ko", ko: "중국", vi: "Trung Quốc", choices: ["중국", "한국", "태국", "베트남"], answer: "중국" },
+      { type: "listen-choice", ko: "베트남", choices: ["베트남", "태국", "러시아", "독일"], answer: "베트남" },
+      { type: "listen-pick-audio", ko: "미국", choices: ["미국", "독일", "태국", "한국"], answer: "미국" },
+      { type: "ko-to-vi", ko: "베트남 사람", vi: "người Việt Nam", choices: ["người Việt Nam", "người Hàn Quốc", "người Nhật", "người Trung Quốc"], answer: "người Việt Nam" },
+      { type: "vi-to-ko", ko: "한국", vi: "Hàn Quốc", choices: ["한국", "일본", "중국", "미국"], answer: "한국" },
+      { type: "listen-choice", ko: "일본", choices: ["일본", "중국", "캐나다", "프랑스"], answer: "일본" },
+      { type: "listen-pick-audio", ko: "캐나다", choices: ["캐나다", "중국", "베트남", "일본"], answer: "캐나다" },
+      { type: "ko-to-vi", ko: "한국 사람", vi: "người Hàn Quốc", choices: ["người Hàn Quốc", "người Việt Nam", "người Mỹ", "người Thái"], answer: "người Hàn Quốc" },
+      { type: "listen-assemble", ko: "프랑스", tiles: ["프", "랑", "스"], distractorTiles: ["독"] },
+      { type: "recall-type", ko: "일본 사람", vi: "người Nhật" },
+    ],
   },
   vocab: ["안녕하세요", "반가워요", "이름", "베트남", "한국", "중국"],
   grammar: {
@@ -115,28 +129,20 @@ export const SESSION1 = {
       choices: ["이에요", "예요", "가 아니에요"],
       answer: "이에요",
     },
-    sentenceQuiz: {
-      blank: {
-        prefix: "저는 베트남 사람",
-        suffix: ".",
-        answer: "이에요",
-        choices: ["이에요", "예요", "이 아니에요", "가 아니에요"],
-      },
-      positive: {
-        ko: "저는 베트남 사람이에요.",
-        vi: "Tôi là người Việt Nam.",
-        words: ["저는", "베트남", "사람", "이에요"],
-        wordDistractors: ["은", "예요", "중국"],
-      },
-      target: {
-        ko: "저는 회사원이 아니에요.",
-        vi: "Tôi không phải là nhân viên công ty.",
-        words: ["저는", "회사원이", "아니에요"],
-        wordDistractors: ["이에요", "선생님이"],
-        chars: ["저", "는", "회", "사", "원", "이", "아", "니", "에", "요"],
-      },
-      translateDistractor: "저는 회사원이에요.",
-    },
+    // exact 10-item 문법 Act sequence for 1과 1차시, from
+    // K-Chao_초급1_1과_ACT_어휘6문법5_차시별10문항_최종본_260807.xlsx (sheet 03_문법_10문항)
+    sentenceQuiz: [
+      { type: "blank", prefix: "저는 학생", suffix: ".", choices: ["이에요", "예요"], answer: "이에요" },
+      { type: "translate", ko: "저는 베트남 사람이에요.", choices: ["Tôi là người Việt Nam", "Tôi là học sinh"], answer: "Tôi là người Việt Nam" },
+      { type: "construct", vi: "Tôi là Hương.", tiles: ["저는", "흐엉이에요"], answer: "저는 흐엉이에요." },
+      { type: "blank", prefix: "저는 타오", suffix: ".", choices: ["이에요", "예요"], answer: "예요" },
+      { type: "translate", ko: "저는 학생이에요.", choices: ["Tôi là học sinh", "Tôi là người Hàn Quốc"], answer: "Tôi là học sinh" },
+      { type: "construct", vi: "Tôi là người Việt Nam.", tiles: ["저는", "베트남 사람이에요"], answer: "저는 베트남 사람이에요." },
+      { type: "blank", prefix: "저는 민준", suffix: ".", choices: ["이에요", "예요"], answer: "이에요" },
+      { type: "listenWord", ko: "저는 일본 사람이에요.", tiles: ["저는", "일본", "사람이에요"] },
+      { type: "construct", vi: "Tôi là người Hàn Quốc.", tiles: ["저는", "한국", "사람이에요"], answer: "저는 한국 사람이에요." },
+      { type: "listenChar", ko: "예요", tiles: ["예", "요"] },
+    ],
     speakingOutput: {
       lead: "주어진 정보를 넣어 문장을 완성한 뒤, 소리 내어 말하세요.",
       model: [
