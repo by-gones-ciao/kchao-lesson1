@@ -1252,11 +1252,12 @@ function SentenceBuilder({ targetTokens, poolExtra, joinWith = "", onDone, onWro
 // grammar sentence quiz — 10-item Act sequence ("문제 풀기")
 // ---------------------------------------------------------------------
 const GRAMMAR_QUIZ_PROMPTS = {
-  blank: "빈칸에 들어갈 말을 선택하세요",
-  translate: "문장의 뜻을 고르세요.",
-  construct: "단어를 배열하세요.",
-  listenWord: "들은 문장을 단어 카드로 구성하세요.",
-  listenChar: "들은 표현을 음절 카드로 구성하세요.",
+  blank: "빈칸에 알맞은 말을 고르세요",
+  translate: "알맞은 한국어 문장을 고르세요",
+  construct: "다음 문장을 해석하세요",
+  constructChar: "다음 문장을 해석하세요",
+  listenWord: "문장을 듣고 단어를 배열하세요",
+  listenChar: "문장을 듣고 글자를 배열하세요",
 };
 
 function GrammarSentenceQuiz({ items, onAllDone, onExit }) {
@@ -1270,7 +1271,7 @@ function GrammarSentenceQuiz({ items, onAllDone, onExit }) {
   useEffect(() => {
     setSelected(null);
     if (item.type === "listenWord" || item.type === "listenChar") speakKo(item.ko);
-  }, [step]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [step, item.ko, item.type]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const addWrong = () => {
     if (!wrongIndexes.current.includes(step)) wrongIndexes.current.push(step);
@@ -1323,7 +1324,7 @@ function GrammarSentenceQuiz({ items, onAllDone, onExit }) {
 
       {item.type === "translate" && (
         <>
-          <div className="quiz-prompt-box">{item.ko}</div>
+          <div className="quiz-prompt-box">{item.vi}</div>
           <div className="choice-list">
             {shuffle(item.choices).map((c) => {
               let cls = "";
@@ -1342,6 +1343,13 @@ function GrammarSentenceQuiz({ items, onAllDone, onExit }) {
         <>
           <div className="quiz-prompt-box">{item.vi}</div>
           <SentenceBuilder targetTokens={item.tiles} joinWith=" " poolExtra={item.distractorTiles || []} onDone={advance} onWrong={addWrong} />
+        </>
+      )}
+
+      {item.type === "constructChar" && (
+        <>
+          <div className="quiz-prompt-box">{item.vi}</div>
+          <SentenceBuilder targetTokens={item.tiles} joinWith="" poolExtra={item.distractorTiles || []} onDone={advance} onWrong={addWrong} />
         </>
       )}
 
@@ -1876,7 +1884,7 @@ function RetryStage({ session, patchSession, onDone }) {
 
       {source === "grammar" && item.type === "blank" && (
         <>
-          <p className="pron-title">빈칸에 들어갈 말을 선택하세요</p>
+          <p className="pron-title">빈칸에 알맞은 말을 고르세요</p>
           <div className="quiz-prompt-box sentence-blank-box">{item.prefix}<span className="blank-slot">{selected || " "}</span>{item.suffix}</div>
           <div className="choice-list">
             {item.choices.map((c) => { let cls = ""; if (selected === c) cls = c === item.answer ? "correct" : "wrong";
@@ -1886,8 +1894,8 @@ function RetryStage({ session, patchSession, onDone }) {
       )}
       {source === "grammar" && item.type === "translate" && (
         <>
-          <p className="pron-title">문장의 뜻을 고르세요.</p>
-          <div className="quiz-prompt-box">{item.ko}</div>
+          <p className="pron-title">알맞은 한국어 문장을 고르세요</p>
+          <div className="quiz-prompt-box">{item.vi}</div>
           <div className="choice-list">
             {shuffle(item.choices).map((c) => { let cls = ""; if (selected === c) cls = c === item.answer ? "correct" : "wrong";
               return <button key={c} type="button" disabled={!!selected} className={cls} onClick={() => choose(c, c === item.answer)}><span>{c}</span></button>; })}
@@ -1895,15 +1903,19 @@ function RetryStage({ session, patchSession, onDone }) {
         </>
       )}
       {source === "grammar" && item.type === "construct" && (
-        <><p className="pron-title">단어를 배열하세요.</p><div className="quiz-prompt-box">{item.vi}</div>
+        <><p className="pron-title">다음 문장을 해석하세요</p><div className="quiz-prompt-box">{item.vi}</div>
           <SentenceBuilder targetTokens={item.tiles} joinWith=" " poolExtra={item.distractorTiles || []} onDone={advance} onWrong={() => {}} /></>
       )}
+      {source === "grammar" && item.type === "constructChar" && (
+        <><p className="pron-title">다음 문장을 해석하세요</p><div className="quiz-prompt-box">{item.vi}</div>
+          <SentenceBuilder targetTokens={item.tiles} joinWith="" poolExtra={item.distractorTiles || []} onDone={advance} onWrong={() => {}} /></>
+      )}
       {source === "grammar" && item.type === "listenWord" && (
-        <><p className="pron-title">들은 문장을 단어 카드로 구성하세요.</p>
+        <><p className="pron-title">문장을 듣고 단어를 배열하세요</p>
           <SentenceBuilder targetTokens={item.tiles} joinWith=" " speaker={() => speakKo(item.ko)} poolExtra={item.distractorTiles || []} onDone={advance} onWrong={() => {}} /></>
       )}
       {source === "grammar" && item.type === "listenChar" && (
-        <><p className="pron-title">들은 표현을 음절 카드로 구성하세요.</p>
+        <><p className="pron-title">문장을 듣고 글자를 배열하세요</p>
           <SentenceBuilder targetTokens={item.tiles} joinWith="" speaker={() => speakKo(item.ko)} poolExtra={item.distractorTiles || []} onDone={advance} onWrong={() => {}} /></>
       )}
 
@@ -1932,7 +1944,7 @@ function LearningReportStage({ session, state, meta, patchSession }) {
       <section className="report-stats" aria-label="학습 결과 지표">
         <div className="report-stat"><BookIcon size={22} /><span>학습 어휘</span><strong>{SESSION1.context.words.length}개</strong></div>
         <div className="report-stat"><MicIcon size={22} /><span>발음평가</span><strong>{speakingCount}/{speakingCount}</strong></div>
-        <div className="report-stat"><CheckCircle size={22} /><span>확인 문제</span><strong>10/10</strong></div>
+        <div className="report-stat"><CheckCircle size={22} /><span>확인 문제</span><strong>6/6</strong></div>
       </section>
 
       <section className="report-actions" aria-label="다시 보기">

@@ -129,19 +129,15 @@ export const SESSION1 = {
       choices: ["이에요", "예요", "가 아니에요"],
       answer: "이에요",
     },
-    // exact 10-item 문법 Act sequence for 1과 1차시, from
-    // K-Chao_초급1_1과_ACT_어휘6문법5_차시별10문항_최종본_260807.xlsx (sheet 03_문법_10문항)
+    // exact 6-type 문법 Act sequence, reproduced word-for-word from
+    // 문법 유형_최종6종.pdf
     sentenceQuiz: [
-      { type: "blank", prefix: "저는 학생", suffix: ".", choices: ["이에요", "예요"], answer: "이에요" },
-      { type: "translate", ko: "저는 베트남 사람이에요.", choices: ["Tôi là người Việt Nam", "Tôi là học sinh"], answer: "Tôi là người Việt Nam" },
-      { type: "construct", vi: "Tôi là Hương.", tiles: ["저는", "흐엉이에요"], distractorTiles: ["예요", "선생님이"], answer: "저는 흐엉이에요." },
-      { type: "blank", prefix: "저는 타오", suffix: ".", choices: ["이에요", "예요"], answer: "예요" },
-      { type: "translate", ko: "저는 학생이에요.", choices: ["Tôi là học sinh", "Tôi là người Hàn Quốc"], answer: "Tôi là học sinh" },
-      { type: "construct", vi: "Tôi là người Việt Nam.", tiles: ["저는", "베트남 사람이에요"], distractorTiles: ["은", "선생님이"], answer: "저는 베트남 사람이에요." },
-      { type: "blank", prefix: "저는 민준", suffix: ".", choices: ["이에요", "예요"], answer: "이에요" },
-      { type: "listenWord", ko: "저는 일본 사람이에요.", tiles: ["저는", "일본", "사람이에요"], distractorTiles: ["이에요", "선생님이"] },
-      { type: "construct", vi: "Tôi là người Hàn Quốc.", tiles: ["저는", "한국", "사람이에요"], distractorTiles: ["은", "의사예요"], answer: "저는 한국 사람이에요." },
-      { type: "listenChar", ko: "예요", tiles: ["예", "요"], distractorTiles: ["이", "가"] },
+      { type: "blank", prefix: "저는 베트남 사람", suffix: ".", choices: ["이에요", "예요"], answer: "이에요" },
+      { type: "translate", vi: "Tôi không phải là nhân viên công ty.", choices: ["저는 회사원이 아니에요.", "저는 회사원이에요."], answer: "저는 회사원이 아니에요." },
+      { type: "construct", vi: "Tôi là người Việt Nam.", tiles: ["저는", "베트남", "사람", "이에요"], distractorTiles: ["은"], answer: "저는 베트남 사람이에요." },
+      { type: "constructChar", vi: "Tôi là người Pháp.", tiles: ["저", "는", "프", "랑", "스", "사", "람", "이", "에", "요"], distractorTiles: ["예", "은"], answer: "저는 프랑스 사람이에요." },
+      { type: "listenWord", ko: "만나서 반가워요. 저는 제니예요.", tiles: ["만나서", "반가워요", "저는", "제니예요"], distractorTiles: ["고마워요", "저은", "제니이에요"] },
+      { type: "listenChar", ko: "이름이 뭐예요?", tiles: ["이", "름", "이", "뭐", "예", "요"], distractorTiles: ["나", "라", "에"] },
     ],
     speakingOutput: {
       lead: "주어진 정보를 넣어 문장을 완성한 뒤, 소리 내어 말하세요.",
