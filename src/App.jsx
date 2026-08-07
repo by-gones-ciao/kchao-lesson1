@@ -1341,18 +1341,18 @@ function GrammarSentenceQuiz({ items, onAllDone, onExit }) {
       {item.type === "construct" && (
         <>
           <div className="quiz-prompt-box">{item.vi}</div>
-          <SentenceBuilder targetTokens={item.tiles} joinWith=" " poolExtra={[]} onDone={advance} onWrong={addWrong} />
+          <SentenceBuilder targetTokens={item.tiles} joinWith=" " poolExtra={item.distractorTiles || []} onDone={advance} onWrong={addWrong} />
         </>
       )}
 
       {item.type === "listenWord" && (
         <SentenceBuilder targetTokens={item.tiles} joinWith=" " speaker={() => speakKo(item.ko)}
-          poolExtra={[]} onDone={advance} onWrong={addWrong} />
+          poolExtra={item.distractorTiles || []} onDone={advance} onWrong={addWrong} />
       )}
 
       {item.type === "listenChar" && (
         <SentenceBuilder targetTokens={item.tiles} joinWith="" speaker={() => speakKo(item.ko)}
-          poolExtra={[]} onDone={advance} onWrong={addWrong} />
+          poolExtra={item.distractorTiles || []} onDone={advance} onWrong={addWrong} />
       )}
 
       <button type="button" className="quiz-skip-btn" disabled={!!selected} onClick={advance}>
@@ -1896,15 +1896,15 @@ function RetryStage({ session, patchSession, onDone }) {
       )}
       {source === "grammar" && item.type === "construct" && (
         <><p className="pron-title">단어를 배열하세요.</p><div className="quiz-prompt-box">{item.vi}</div>
-          <SentenceBuilder targetTokens={item.tiles} joinWith=" " poolExtra={[]} onDone={advance} onWrong={() => {}} /></>
+          <SentenceBuilder targetTokens={item.tiles} joinWith=" " poolExtra={item.distractorTiles || []} onDone={advance} onWrong={() => {}} /></>
       )}
       {source === "grammar" && item.type === "listenWord" && (
         <><p className="pron-title">들은 문장을 단어 카드로 구성하세요.</p>
-          <SentenceBuilder targetTokens={item.tiles} joinWith=" " speaker={() => speakKo(item.ko)} poolExtra={[]} onDone={advance} onWrong={() => {}} /></>
+          <SentenceBuilder targetTokens={item.tiles} joinWith=" " speaker={() => speakKo(item.ko)} poolExtra={item.distractorTiles || []} onDone={advance} onWrong={() => {}} /></>
       )}
       {source === "grammar" && item.type === "listenChar" && (
         <><p className="pron-title">들은 표현을 음절 카드로 구성하세요.</p>
-          <SentenceBuilder targetTokens={item.tiles} joinWith="" speaker={() => speakKo(item.ko)} poolExtra={[]} onDone={advance} onWrong={() => {}} /></>
+          <SentenceBuilder targetTokens={item.tiles} joinWith="" speaker={() => speakKo(item.ko)} poolExtra={item.distractorTiles || []} onDone={advance} onWrong={() => {}} /></>
       )}
 
       <button type="button" className="quiz-skip-btn" disabled={!!selected} onClick={advance}>이 문제 건너뛰기</button>
