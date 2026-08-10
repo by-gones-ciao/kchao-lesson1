@@ -489,7 +489,7 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
         {session.stage === "recall" && <RecallStage session={session} patchSession={patchSession} />}
         {session.stage === "context" && <ContextStage session={session} patchSession={patchSession} />}
         {session.stage === "vocab" && <VocabStage patchSession={patchSession} onComplete={goNext} onBack={goBack} />}
-        {session.stage === "grammar" && <GrammarStage session={session} patchSession={patchSession} />}
+        {session.stage === "grammar" && <GrammarStage session={session} patchSession={patchSession} onSpeakingCheerDone={goNext} />}
         {session.stage === "retry" && <RetryStage session={session} patchSession={patchSession} onDone={goNext} />}
         {session.stage === "report" && <LearningReportStage session={session} state={state} meta={meta} patchSession={patchSession} />}
       </main>
@@ -983,6 +983,14 @@ const CHEER_COPY = {
     },
     image: "/assets/cheer/cheer-flag.png",
   },
+  retry: {
+    title: { ko: "다 해냈어요!", vi: "Bạn đã làm được rồi!" },
+    lines: {
+      ko: ["틀렸던 문제까지 모두 다시 풀었어요.", "오늘 학습 결과를 확인해 볼까요?"],
+      vi: ["Bạn đã làm lại hết các câu đã sai.", "Cùng xem kết quả học tập hôm nay nhé!"],
+    },
+    image: "/assets/cheer/cheer-hearts.png",
+  },
 };
 
 function CheerScreen({ kind, onContinue }) {
@@ -1417,7 +1425,7 @@ function GrammarSentenceQuiz({ items, onAllDone, onExit }) {
   );
 }
 
-function GrammarStage({ session, patchSession }) {
+function GrammarStage({ session, patchSession, onSpeakingCheerDone }) {
   const g = SESSION1.grammar;
   const view = session.grammar.view;
   const { lang } = useLang();
@@ -1438,10 +1446,16 @@ function GrammarStage({ session, patchSession }) {
     );
   }
 
+  // Skips straight past the last (answers-revealed) practice screen once the
+  // cheer is dismissed — that screen is only meant for 학습 리포트's "내가
+  // 말한 문장 보기" review, not as a stop on the normal forward path.
   if (view === "speaking" && session.grammar.speakingDone && !session.grammar.speakingCheerSeen) {
     return (
       <CheerScreen kind="speaking"
-        onContinue={() => patchSession((prev) => ({ grammar: { ...prev.grammar, speakingCheerSeen: true } }))} />
+        onContinue={() => {
+          patchSession((prev) => ({ grammar: { ...prev.grammar, speakingCheerSeen: true } }));
+          onSpeakingCheerDone();
+        }} />
     );
   }
 
@@ -1838,6 +1852,7 @@ function RetryStage({ session, patchSession, onDone }) {
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState(null);
   const [typed, setTyped] = useState("");
+  const [showCheer, setShowCheer] = useState(false);
 
   useEffect(() => {
     if (retryQueue.length === 0) onDone();
@@ -1850,6 +1865,8 @@ function RetryStage({ session, patchSession, onDone }) {
 
   if (retryQueue.length === 0) return null;
 
+  if (showCheer) return <CheerScreen kind="retry" onContinue={onDone} />;
+
   if (session.retryFlow === "intro") {
     return (
       <div className="stage-section grammar-stage dobira-stage">
@@ -1859,7 +1876,7 @@ function RetryStage({ session, patchSession, onDone }) {
   }
 
   const { source, item } = retryQueue[index];
-  const advance = () => { if (index + 1 < retryQueue.length) setIndex(index + 1); else onDone(); };
+  const advance = () => { if (index + 1 < retryQueue.length) setIndex(index + 1); else setShowCheer(true); };
   const choose = (value, ok) => { if (selected) return; setSelected(value); setTimeout(advance, ok ? 650 : 1100); };
   const pct = Math.round(((index + 1) / retryQueue.length) * 100);
 
