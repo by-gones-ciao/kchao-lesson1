@@ -1083,6 +1083,7 @@ function VocabStage({ patchSession, onComplete, onBack }) {
         <div className="pron-progress"><span style={{ width: `${pct}%` }} /></div>
         <button type="button" className="pron-close" aria-label="퀴즈 건너뛰기" onClick={finish}><XCircle size={26} /></button>
       </div>
+      <div className="stage-kicker"><BookIcon size={16} /> 어휘 문제 {qIndex + 1}/{items.length}</div>
       <p className="pron-title">{QUIZ_PROMPTS[item.type]}</p>
 
       {item.type === "vi-to-ko" && (
@@ -1356,6 +1357,7 @@ function GrammarSentenceQuiz({ items, onAllDone, onExit }) {
         <button type="button" className="pron-close" aria-label="문제 건너뛰기" onClick={() => onAllDone(wrongIndexes.current)}><XCircle size={26} /></button>
       </div>
 
+      <div className="stage-kicker"><NoteIcon size={16} /> 문법 문제 {step + 1}/{totalSteps}</div>
       <p className="pron-title">{GRAMMAR_QUIZ_PROMPTS[item.type]}</p>
 
       {item.type === "blank" && (
