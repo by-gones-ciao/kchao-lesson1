@@ -387,10 +387,16 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
   const { lang } = useLang();
   // "퀵리뷰"(recall) only makes sense once a learner has prior sessions to
   // recall — 1차시 has nothing to look back on, so it's skipped there.
-  const stageOrder = useMemo(
-    () => (state.activeSession === 1 ? STAGE_ORDER.filter((s) => s !== "recall") : STAGE_ORDER),
-    [state.activeSession]
-  );
+  // "오답 다시 풀기"(retry) only makes sense once there's a wrong answer to
+  // retry — otherwise RetryStage auto-skips itself on mount, which (without
+  // this exclusion) makes the back button from 학습 리포트 bounce straight
+  // back to 학습 리포트 instead of landing on the previous real screen.
+  const hasRetryItems = (session.vocabWrong?.length || 0) > 0 || (session.grammar.wrongKinds?.length || 0) > 0;
+  const stageOrder = useMemo(() => {
+    let order = state.activeSession === 1 ? STAGE_ORDER.filter((s) => s !== "recall") : STAGE_ORDER;
+    if (!hasRetryItems) order = order.filter((s) => s !== "retry");
+    return order;
+  }, [state.activeSession, hasRetryItems]);
   const stageIndex = stageOrder.indexOf(session.stage);
   const meta = SESSIONS.find((s) => s.id === state.activeSession);
 
