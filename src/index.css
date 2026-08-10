@@ -194,7 +194,7 @@
 .practice-fill-box{margin-bottom:16px;padding:16px;border:1px solid var(--line);border-radius:12px;background:#fbfefe;text-align:center}
 .practice-fill-box p{margin:0 0 10px;font-size:15px;font-weight:750;color:var(--ink)}
 .practice-fill-tag{display:inline-block;padding:5px 14px;border-radius:8px;background:var(--teal-soft);color:var(--teal-dark);font-size:13px;font-weight:850}
-.retry-kicker{color:#86520a;background:#fff0d6}
+.retry-kicker{color:var(--teal-dark);background:var(--teal-soft)}
 .lang-toggle-row{display:flex;justify-content:flex-end;margin-bottom:7px}
 .lang-toggle{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
 .lang-toggle button{min-width:38px;min-height:26px;padding:0 8px;border:0;background:#fff;color:var(--muted);font-size:10px;font-weight:850;cursor:pointer}
