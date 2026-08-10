@@ -135,7 +135,7 @@ function HomeScreen({ state, setState, setView, completedCount }) {
   const sessionProgress = (sess, id) => {
     if (!sess) return 0;
     if (sess.completed) return 1;
-    const order = id === 1 ? STAGE_ORDER.filter((x) => x !== "recall") : STAGE_ORDER;
+    const order = id === 1 ? STAGE_ORDER.filter((x) => x !== "recall") : id === 2 ? ["recall"] : STAGE_ORDER;
     const idx = order.indexOf(sess.stage);
     return order.length ? Math.max(0, idx) / order.length : 0;
   };
@@ -144,7 +144,9 @@ function HomeScreen({ state, setState, setView, completedCount }) {
       ...s,
       view: "learning",
       activeSession: id,
-      sessions: { ...s.sessions, [id]: s.sessions[id] ?? defaultSessionState() },
+      // 2차시 only has its 퀵리뷰 built out so far, so it opens straight into
+      // recall instead of a 1차시-flavored mission screen it doesn't have yet.
+      sessions: { ...s.sessions, [id]: s.sessions[id] ?? { ...defaultSessionState(), stage: id === 2 ? "recall" : "mission" } },
     }));
   };
   return (
@@ -189,7 +191,7 @@ function HomeScreen({ state, setState, setView, completedCount }) {
             {SESSIONS.map((s) => {
               const sess = state.sessions[s.id];
               const completed = sess?.completed;
-              const unlocked = s.id === 1;
+              const unlocked = s.id <= 2;
               const cls = completed ? "completed" : unlocked ? "unlocked" : "locked";
               return (
                 <article key={s.id} className={`session-card ${cls}`}>
@@ -393,6 +395,10 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
   // back to 학습 리포트 instead of landing on the previous real screen.
   const hasRetryItems = (session.vocabWrong?.length || 0) > 0 || (session.grammar.wrongKinds?.length || 0) > 0;
   const stageOrder = useMemo(() => {
+    // 2차시 only has its 퀵리뷰 (recall) built out so far — mission/context/
+    // vocab/grammar/etc still hold 1차시 placeholder content, so 2차시 stops
+    // right after recall until the rest of its content is designed.
+    if (state.activeSession === 2) return ["recall"];
     let order = state.activeSession === 1 ? STAGE_ORDER.filter((s) => s !== "recall") : STAGE_ORDER;
     if (!hasRetryItems) order = order.filter((s) => s !== "retry");
     return order;
@@ -438,7 +444,9 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
   };
   const goNext = () => {
     const next = stageOrder[stageIndex + 1];
-    if (!next) return;
+    // no further stage built yet (e.g. 2차시 stops after 퀵리뷰 for now) —
+    // there's nothing to advance into, so head back to 홈 instead of no-op.
+    if (!next) { setView("home"); return; }
     patchSession((prev) => ({ stage: next, visited: prev.visited.includes(next) ? prev.visited : [...prev.visited, next] }));
   };
   const finishSession = () => {
@@ -449,7 +457,7 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
   const canProceed = useMemo(() => {
     switch (session.stage) {
       case "mission": return true;
-      case "recall": return !!session.recall;
+      case "recall": return (session.recallLog?.length || 0) >= SESSION1.recall.items.length;
       case "context": return true;
       case "vocab": return session.vocabTouched.length >= 2;
       case "grammar": return session.grammar.passed;
@@ -571,6 +579,16 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
         ) : session.stage === "retry" && session.retryFlow === "intro" ? (
           <button type="button" className="primary-button"
             onClick={() => patchSession({ retryFlow: "quiz" })}>시작하기<ArrowRight /></button>
+        ) : session.stage === "recall" && session.recallFlow === "intro" ? (
+          <button type="button" className="primary-button"
+            onClick={() => patchSession({ recallFlow: "cards" })}>시작하기<ArrowRight /></button>
+        ) : session.stage === "recall" ? (
+          // no skip button here on purpose — every card must be answered
+          // (기억나요/기억이 안 나요) before moving on, so canProceed is the
+          // only gate.
+          <button type="button" className="primary-button" disabled={!canProceed} onClick={goNext}>
+            {state.activeSession}차시 시작하기<ArrowRight />
+          </button>
         ) : session.stage === "context" && session.contextFlow === "intro" ? (
           <button type="button" className="primary-button"
             onClick={() => patchSession({ contextFlow: "wordbook" })}>시작하기<ArrowRight /></button>
@@ -615,23 +633,95 @@ function MissionStage() {
   );
 }
 
+// Friendly, non-judgmental comment per "기억나요" count (0~items.length) —
+// written by hand instead of a templated "N개 중 M개" stat, and deliberately
+// avoids counting words ("하나는", "두 개나"...) and honorific endings (-시-)
+// per feedback: keep it plain, adult-facing, and understated.
+const RECALL_RESULT_COPY = [
+  "기억이 잘 안 났어요. 오늘 다시 배우면서 채워가요.",
+  "조금 기억이 남아 있었어요. 나머지는 오늘 다시 살펴봐요.",
+  "일부는 기억하고 있었어요. 감을 잡아가고 있어요.",
+  "절반 이상 기억하고 있었어요. 흐름을 잘 따라오고 있어요.",
+  "대부분 기억하고 있었어요. 준비가 잘 되고 있어요.",
+  "전부 기억하고 있었어요. 완벽하게 준비됐어요.",
+];
+
 function RecallStage({ session, patchSession }) {
-  const r = SESSION1.recall;
+  const items = SESSION1.recall.items;
+  const log = session.recallLog || [];
+  // which card currently has its answer shown but no reaction picked yet —
+  // local/transient on purpose: a reload just re-reveals, same as vocab quiz
+  const [revealedIndex, setRevealedIndex] = useState(null);
+
+  if (session.recallFlow === "intro") {
+    return (
+      <div className="stage-section grammar-stage dobira-stage">
+        <DobiraCard kind="recall" />
+      </div>
+    );
+  }
+
+  const currentIndex = log.length;
+  const allDone = currentIndex >= items.length;
+
+  const react = (index, reaction) => {
+    if (index !== currentIndex) return;
+    patchSession((prev) => ({ recallLog: [...(prev.recallLog || []), { id: index, reaction }] }));
+    setRevealedIndex(null);
+  };
+
   return (
     <div className="stage-section">
-      <div className="stage-kicker">퀵 리뷰</div>
-      <h2>전에 배운 내용이 기억나는지 확인해요.</h2>
-      <p className="stage-lead">기억이 나면 체크하세요.</p>
-      <ul className="recall-list">
-        {r.items.map((it) => <li key={it}><CheckCircle size={16} />{it}</li>)}
-      </ul>
-      <fieldset className="confidence-field">
-        <legend>지금 어느 정도 기억나요?</legend>
-        {r.options.map((opt) => (
-          <button key={opt} type="button" className={session.recall === opt ? "selected" : ""}
-            onClick={() => patchSession({ recall: opt })}>{opt}</button>
-        ))}
-      </fieldset>
+      <span className="stage-kicker">퀵 리뷰</span>
+      <h2>1차시에서 배운 내용을 기억해봐요.</h2>
+      <p className="stage-lead">질문에 대한 답을 떠올린 후에, 눌러서 정답을 확인해 보세요.</p>
+
+      <div className="recall-card-list">
+        {items.map((item, i) => {
+          const answered = i < currentIndex;
+          const locked = i > currentIndex;
+          const revealed = answered || revealedIndex === i;
+          const reaction = log[i]?.reaction;
+          return (
+            <article key={i}
+              className={`recall-card ${locked ? "locked" : ""} ${revealed ? "revealed" : ""} ${answered ? "answered" : ""}`}
+              onClick={() => { if (i === currentIndex && !revealed) setRevealedIndex(i); }}>
+              <div className="recall-card-top">
+                <span className="recall-card-badge">{answered ? <CheckCircle size={13} /> : i + 1}</span>
+                <div className="recall-card-body">
+                  <span className="recall-card-tag">{item.tag}</span>
+                  <p className="recall-card-cue">{item.cue}</p>
+                  {!revealed && <p className="recall-tap-msg">눌러서 정답 확인</p>}
+                  {revealed && (
+                    <div className="recall-card-answer">
+                      <strong>{item.answer}</strong>
+                      <span>{item.hint}</span>
+                    </div>
+                  )}
+                  {revealed && (
+                    <div className="recall-card-react">
+                      <button type="button" disabled={answered} className={reaction === "known" ? "picked" : ""}
+                        onClick={(e) => { e.stopPropagation(); react(i, "known"); }}>기억나요</button>
+                      <button type="button" disabled={answered} className={`fuzzy ${reaction === "fuzzy" ? "picked" : ""}`}
+                        onClick={(e) => { e.stopPropagation(); react(i, "fuzzy"); }}>기억이 안 나요</button>
+                    </div>
+                  )}
+                  {revealed && !answered && (
+                    <p className="recall-react-hint">기억나요 / 기억이 안 나요 중 하나를 고르면 다음 카드로 넘어가요.</p>
+                  )}
+                </div>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+
+      {allDone && (
+        <div className="recall-summary">
+          <CheckCircle size={18} />
+          <span>{RECALL_RESULT_COPY[log.filter((l) => l.reaction === "known").length]}</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -817,6 +907,16 @@ function shuffle(arr) {
 // explaining *why* a stage/exercise-type exists rather than its difficulty
 // ---------------------------------------------------------------------
 const DOBIRA_COPY = {
+  recall: {
+    badge: { ko: "퀵 리뷰", vi: "Ôn nhanh" },
+    icon: "hourglass",
+    title: { ko: "1차시 내용을 다시 떠올려봐요", vi: "Cùng nhớ lại nội dung buổi 1" },
+    lead: { ko: "질문을 보고 먼저 떠올린 다음, 눌러서 정답을 확인해요.", vi: "Xem câu hỏi, tự nhớ lại trước rồi nhấn để xem đáp án." },
+    quick: {
+      label: { ko: "학습 성과", vi: "Kết quả học tập" },
+      desc: { ko: "1차시 핵심 표현을 다시 기억해내며 2차시를 준비할 수 있어요.", vi: "Bạn sẽ ôn lại biểu hiện cốt lõi của buổi 1 để chuẩn bị cho buổi 2." },
+    },
+  },
   vocabWordbook: {
     badge: { ko: "오늘의 단어", vi: "Từ vựng hôm nay" },
     icon: "book",
@@ -936,7 +1036,7 @@ function DobiraCard({ kind }) {
   const { lang } = useLang();
   const copy = DOBIRA_COPY[kind];
   const t = (field) => pick(lang, field.ko, field.vi);
-  const DOBIRA_ICONS = { book: BookIcon, note: NoteIcon, mic: MicIcon, play: PlayCircleIcon, check: CheckCircle };
+  const DOBIRA_ICONS = { book: BookIcon, note: NoteIcon, mic: MicIcon, play: PlayCircleIcon, check: CheckCircle, hourglass: HourglassIcon };
   const Icon = DOBIRA_ICONS[copy.icon] || BookIcon;
   return (
     <div className="dobira-screen">

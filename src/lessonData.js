@@ -34,9 +34,17 @@ export const SESSION1 = {
     pages: "p16, p20–21",
     artifact: "내 프로필 카드 · 이름",
   },
+  // reviewed at the start of the *next* session's 퀵리뷰 (tap-to-reveal recall
+  // cards) — covers 1차시's vocab (both directions), the 이에요/예요 batchim
+  // rule (both branches), and the self-intro sentence that combines them.
   recall: {
-    items: ["안녕하세요?라고 인사하기", "내 이름 떠올리기", "나라 이름 한 개 말하기"],
-    options: ["바로 말할 수 있어요", "조금 생각나요", "다시 보고 싶어요"],
+    items: [
+      { tag: "어휘 · 생산", cue: "\"Việt Nam\"은 한국어로 뭐예요?", answer: "베트남", hint: "1과 핵심 어휘 15개 중 하나예요." },
+      { tag: "어휘 · 반대방향", cue: "'프랑스 사람'은 베트남어로 뭐예요?", answer: "người Pháp", hint: "국적 표현 \"N 사람\" 패턴도 함께 떠올려보세요." },
+      { tag: "문법 · 받침 O", cue: "받침이 있는 '학생' 뒤에는 이에요, 예요 중 뭘 붙일까요?", answer: "이에요 → 학생이에요", hint: "받침 있음 + 이에요" },
+      { tag: "문법 · 받침 X", cue: "받침이 없는 '기자' 뒤에는 뭘 붙일까요?", answer: "예요 → 기자예요", hint: "받침 없음 + 예요" },
+      { tag: "응용 · 자기소개", cue: "국적을 넣어 자기소개 문장을 완성해보세요: \"저는 ___\"", answer: "저는 베트남 사람이에요.", hint: "1과에서 연습한 자기소개 문형이에요." },
+    ],
   },
   context: {
     quizPrompt: "퀴즈를 풀기 전 단어를 확인해 보세요. 단어를 눌러 발음 평가도 진행해 보세요.",
@@ -226,7 +234,8 @@ export function defaultSessionState() {
   return {
     stage: "mission",
     visited: ["mission"],
-    recall: "",
+    recallFlow: "intro",
+    recallLog: [],
     contextConfirmed: false,
     vocabTouched: [],
     vocabWrong: [],
