@@ -69,7 +69,7 @@ export const SESSION1 = {
       { type: "listen-pick-audio", ko: "캐나다", choices: ["캐나다", "중국", "베트남", "일본"], answer: "캐나다" },
       { type: "ko-to-vi", ko: "한국 사람", vi: "người Hàn Quốc", choices: ["người Hàn Quốc", "người Việt Nam", "người Mỹ", "người Thái"], answer: "người Hàn Quốc" },
       { type: "listen-assemble", ko: "프랑스", tiles: ["프", "랑", "스"], distractorTiles: ["독"] },
-      { type: "recall-type", ko: "일본 사람", vi: "người Nhật" },
+      { type: "recall-type", ko: "일본 사람", vi: "người Nhật", tiles: ["일", "본", "사", "람"], distractorTiles: ["미", "국"] },
     ],
   },
   vocab: ["안녕하세요", "반가워요", "이름", "베트남", "한국", "중국"],

@@ -684,14 +684,13 @@ function PronunciationModal({ words, index, onClose, onNext }) {
 
   const retry = () => { setPhase("record"); setScore(null); };
   const next = () => { if (index + 1 < words.length) onNext(index + 1); else onClose(); };
-  const prev = () => { if (index > 0) onNext(index - 1); else onClose(); };
   const pct = Math.round(((index + 1) / words.length) * 100);
   const { lang } = useLang();
 
   return (
     <div className="pron-overlay" role="dialog" aria-modal="true" aria-label="발음 평가">
       <div className="pron-topbar">
-        <button type="button" className="pron-back" aria-label="이전 화면" onClick={prev}><ArrowLeft size={22} /></button>
+        <button type="button" className="pron-back" aria-label="이전 화면" onClick={onClose}><ArrowLeft size={22} /></button>
         <div className="pron-progress"><span style={{ width: `${pct}%` }} /></div>
         <button type="button" className="pron-close" aria-label="건너뛰기" onClick={onClose}><XCircle size={26} /></button>
       </div>
@@ -1009,14 +1008,6 @@ function VocabStage({ patchSession, onComplete, onBack }) {
     if (!isCorrect) markWrong();
     setTimeout(advance, isCorrect ? 650 : 1100);
   };
-  const submitRecall = () => {
-    if (selected) return;
-    const ok = typed.trim() === item.ko;
-    setSelected(ok ? item.ko : typed);
-    if (!ok) markWrong();
-    setTimeout(advance, ok ? 650 : 1100);
-  };
-
   const pct = Math.round(((qIndex + 1) / items.length) * 100);
 
   return (
@@ -1113,11 +1104,7 @@ function VocabStage({ patchSession, onComplete, onBack }) {
       {item.type === "recall-type" && (
         <>
           <div className="quiz-prompt-box">{item.vi}</div>
-          <div className="listen-type-actions">
-            <input type="text" className={`listen-type-input ${selected && selected !== item.ko ? "wrong" : ""}`} value={typed}
-              placeholder="정답을 입력하세요" disabled={!!selected} onChange={(e) => setTyped(e.target.value)} />
-            <button type="button" className="secondary-button" disabled={!typed.trim() || !!selected} onClick={submitRecall}>확인</button>
-          </div>
+          <SentenceBuilder targetTokens={item.tiles} joinWith="" poolExtra={item.distractorTiles || []} onDone={advance} onWrong={markWrong} />
         </>
       )}
 
@@ -1800,12 +1787,6 @@ function RetryStage({ session, patchSession, onDone }) {
   const { source, item } = retryQueue[index];
   const advance = () => { if (index + 1 < retryQueue.length) setIndex(index + 1); else onDone(); };
   const choose = (value, ok) => { if (selected) return; setSelected(value); setTimeout(advance, ok ? 650 : 1100); };
-  const submitRecall = () => {
-    if (selected) return;
-    const ok = typed.trim() === item.ko;
-    setSelected(ok ? item.ko : typed);
-    setTimeout(advance, ok ? 650 : 1100);
-  };
   const pct = Math.round(((index + 1) / retryQueue.length) * 100);
 
   return (
@@ -1874,11 +1855,7 @@ function RetryStage({ session, patchSession, onDone }) {
         <>
           <p className="pron-title">뜻을 보고 한국어로 쓰세요</p>
           <div className="quiz-prompt-box">{item.vi}</div>
-          <div className="listen-type-actions">
-            <input type="text" className={`listen-type-input ${selected && selected !== item.ko ? "wrong" : ""}`} value={typed}
-              placeholder="정답을 입력하세요" disabled={!!selected} onChange={(e) => setTyped(e.target.value)} />
-            <button type="button" className="secondary-button" disabled={!typed.trim() || !!selected} onClick={submitRecall}>확인</button>
-          </div>
+          <SentenceBuilder targetTokens={item.tiles} joinWith="" poolExtra={item.distractorTiles || []} onDone={advance} onWrong={() => {}} />
         </>
       )}
 
