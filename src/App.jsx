@@ -1108,7 +1108,7 @@ function VocabStage({ patchSession, onComplete, onBack }) {
         </>
       )}
 
-      <button type="button" className="quiz-skip-btn" disabled={!!selected} onClick={advance}>
+      <button type="button" className="quiz-skip-btn" disabled={!!selected} onClick={() => { markWrong(); advance(); }}>
         이 문제 건너뛰기
       </button>
     </div>
@@ -1350,7 +1350,7 @@ function GrammarSentenceQuiz({ items, onAllDone, onExit }) {
           poolExtra={item.distractorTiles || []} onDone={advance} onWrong={addWrong} />
       )}
 
-      <button type="button" className="quiz-skip-btn" disabled={!!selected} onClick={advance}>
+      <button type="button" className="quiz-skip-btn" disabled={!!selected} onClick={() => { addWrong(); advance(); }}>
         이 문제 건너뛰기
       </button>
     </div>
@@ -1758,7 +1758,14 @@ function RetryStage({ session, patchSession, onDone }) {
     const gq = [...new Set(session.grammar.wrongKinds || [])]
       .map((idx) => ({ source: "grammar", item: grammarItems[idx] }))
       .filter((v) => v.item);
-    return [...vq, ...gq].slice(0, 5);
+    // interleave vocab/grammar so both are represented within the 5-item cap
+    // instead of vocab wrongs crowding out grammar wrongs (or vice versa)
+    const merged = [];
+    for (let i = 0; merged.length < 5 && (i < vq.length || i < gq.length); i++) {
+      if (i < vq.length) merged.push(vq[i]);
+      if (merged.length < 5 && i < gq.length) merged.push(gq[i]);
+    }
+    return merged;
   }, [session.vocabWrong, session.grammar.wrongKinds]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [index, setIndex] = useState(0);
