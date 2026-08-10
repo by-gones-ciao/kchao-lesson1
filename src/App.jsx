@@ -954,6 +954,56 @@ function DobiraCard({ kind }) {
   );
 }
 
+// ---------------------------------------------------------------------
+// cheer screen — full-bleed encouragement shown right after a learner
+// finishes 어휘/문법/실전 문제, before moving on to the next stretch
+// ---------------------------------------------------------------------
+const CHEER_COPY = {
+  vocab: {
+    title: { ko: "잘했어요!", vi: "Làm tốt lắm!" },
+    lines: {
+      ko: ["오늘의 단어를 모두 익혔어요.", "이제 문장으로 연결해 볼까요?"],
+      vi: ["Bạn đã học hết từ vựng hôm nay.", "Giờ mình ghép thành câu nhé?"],
+    },
+    image: "/assets/cheer/cheer-book.png",
+  },
+  grammar: {
+    title: { ko: "완벽해요!", vi: "Hoàn hảo!" },
+    lines: {
+      ko: ["문법 표현을 정확히 이해했어요.", "이제 직접 말해볼 차례예요."],
+      vi: ["Bạn đã hiểu đúng ngữ pháp.", "Giờ đến lượt bạn nói thử nhé."],
+    },
+    image: "/assets/cheer/cheer-clipboard.png",
+  },
+  speaking: {
+    title: { ko: "최고예요!", vi: "Tuyệt vời nhất!" },
+    lines: {
+      ko: ["자기소개 문장을 끝까지 완성했어요.", "오늘 학습을 마무리해 볼까요?"],
+      vi: ["Bạn đã hoàn thành câu tự giới thiệu.", "Cùng kết thúc bài học hôm nay nhé!"],
+    },
+    image: "/assets/cheer/cheer-flag.png",
+  },
+};
+
+function CheerScreen({ kind, onContinue }) {
+  const { lang } = useLang();
+  const c = CHEER_COPY[kind];
+  return (
+    <div className="cheer-overlay" role="dialog" aria-modal="true" aria-label="응원 메시지">
+      <div className="cheer-top">
+        <div className="cheer-bubble">
+          <strong>{pick(lang, c.title.ko, c.title.vi)}</strong>
+          {pick(lang, c.lines.ko, c.lines.vi).map((line) => <p key={line}>{line}</p>)}
+        </div>
+        <img className="cheer-character" alt="응원하는 K-Chao 고양이 캐릭터" src={c.image} />
+      </div>
+      <button type="button" className="primary-button cheer-continue" onClick={onContinue}>
+        계속하기<ArrowRight />
+      </button>
+    </div>
+  );
+}
+
 function MicroBanner({ typeKey, onDismiss }) {
   const { lang } = useLang();
   const copy = MICRO_GUIDE[typeKey];
@@ -986,6 +1036,7 @@ function VocabStage({ patchSession, onComplete, onBack }) {
   const [qIndex, setQIndex] = useState(0);
   const [selected, setSelected] = useState(null);
   const [typed, setTyped] = useState("");
+  const [showCheer, setShowCheer] = useState(false);
   const wrongList = useRef([]);
   const item = items[qIndex];
 
@@ -998,8 +1049,9 @@ function VocabStage({ patchSession, onComplete, onBack }) {
   const markWrong = () => { wrongList.current.push({ ko: item.ko, type: item.type }); };
   const finish = () => {
     patchSession({ vocabTouched: SESSION1.context.words.map((w) => w.ko), vocabWrong: wrongList.current.slice(0, 8) });
-    onComplete();
+    setShowCheer(true);
   };
+  if (showCheer) return <CheerScreen kind="vocab" onContinue={onComplete} />;
   const advance = () => {
     if (qIndex + 1 < items.length) setQIndex(qIndex + 1);
     else finish();
@@ -1256,6 +1308,7 @@ const GRAMMAR_QUIZ_PROMPTS = {
 function GrammarSentenceQuiz({ items, onAllDone, onExit }) {
   const [step, setStep] = useState(0);
   const [selected, setSelected] = useState(null);
+  const [showCheer, setShowCheer] = useState(false);
   const wrongIndexes = useRef([]);
 
   const item = items[step];
@@ -1270,9 +1323,10 @@ function GrammarSentenceQuiz({ items, onAllDone, onExit }) {
     if (!wrongIndexes.current.includes(step)) wrongIndexes.current.push(step);
   };
 
+  if (showCheer) return <CheerScreen kind="grammar" onContinue={() => onAllDone(wrongIndexes.current)} />;
   const advance = () => {
     if (step + 1 < totalSteps) setStep(step + 1);
-    else onAllDone(wrongIndexes.current);
+    else setShowCheer(true);
   };
   const goPrev = () => {
     if (step > 0) setStep(step - 1);
@@ -1381,6 +1435,13 @@ function GrammarStage({ session, patchSession }) {
       <div className="stage-section grammar-stage dobira-stage">
         <DobiraCard kind={kind} />
       </div>
+    );
+  }
+
+  if (view === "speaking" && session.grammar.speakingDone && !session.grammar.speakingCheerSeen) {
+    return (
+      <CheerScreen kind="speaking"
+        onContinue={() => patchSession((prev) => ({ grammar: { ...prev.grammar, speakingCheerSeen: true } }))} />
     );
   }
 

@@ -237,7 +237,7 @@ export function defaultSessionState() {
     grammar: {
       attempts: 0, passed: false, retry: false, selected: "", view: "teachIntro",
       videoDone: false, speakingDone: false, speakingIndex: 0, wrongKinds: [],
-      speakingMode: "voice", hintReveal: false,
+      speakingMode: "voice", hintReveal: false, speakingCheerSeen: false,
     },
     retryFlow: "intro",
     retryQueue: null,
