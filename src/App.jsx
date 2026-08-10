@@ -154,8 +154,8 @@ function HomeScreen({ state, setState, setView, completedCount }) {
           <img alt="K-Chao" className="brand-logo" src="/assets/kchao-logo.svg" />
           <div className="brand-header-right">
             <div className="streak" aria-label="학습 연속 기록 1일"><FlameIcon size={19} /><span>1일 연속</span></div>
-            <button type="button" className="icon-button" aria-label="설정" onClick={() => setState((s) => ({ ...s, view: "settings" }))}>
-              <SettingsIcon size={20} />
+            <button type="button" className="icon-button settings-badge" aria-label="설정" onClick={() => setState((s) => ({ ...s, view: "settings" }))}>
+              <SettingsIcon size={18} />
             </button>
           </div>
         </header>
