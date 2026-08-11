@@ -1401,7 +1401,7 @@ function SentenceBuilder({ targetTokens, poolExtra, joinWith = "", onDone, onWro
               );
             })}
           </div>
-          <button type="button" className="secondary-button" disabled={placed.length < targetTokens.length || isDone}
+          <button type="button" className="secondary-button tile-confirm-btn" disabled={placed.length < targetTokens.length || isDone}
             onClick={submitPlaced}>확인</button>
         </>
       ) : (
