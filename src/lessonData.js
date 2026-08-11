@@ -39,8 +39,8 @@ export const SESSION1 = {
   // rule (both branches), and the self-intro sentence that combines them.
   recall: {
     items: [
-      { tag: "어휘 · 생산", cue: "\"Việt Nam\"은 한국어로 뭐예요?", answer: "베트남", hint: "1과 핵심 어휘 15개 중 하나예요." },
-      { tag: "어휘 · 반대방향", cue: "'프랑스 사람'은 베트남어로 뭐예요?", answer: "người Pháp", hint: "국적 표현 \"N 사람\" 패턴도 함께 떠올려보세요." },
+      { tag: "단어(VT-KOR)", cue: "\"Việt Nam\"은 한국어로 뭐예요?", answer: "베트남", hint: "1과 핵심 어휘 15개 중 하나예요." },
+      { tag: "단어(KOR-VT)", cue: "'프랑스 사람'은 베트남어로 뭐예요?", answer: "người Pháp", hint: "국적 표현 \"N 사람\" 패턴도 함께 떠올려보세요." },
       { tag: "문법 · 받침 O", cue: "받침이 있는 '학생' 뒤에는 이에요, 예요 중 뭘 붙일까요?", answer: "이에요 → 학생이에요", hint: "받침 있음 + 이에요" },
       { tag: "문법 · 받침 X", cue: "받침이 없는 '기자' 뒤에는 뭘 붙일까요?", answer: "예요 → 기자예요", hint: "받침 없음 + 예요" },
       { tag: "응용 · 자기소개", cue: "국적을 넣어 자기소개 문장을 완성해보세요: \"저는 ___\"", answer: "저는 베트남 사람이에요.", hint: "1과에서 연습한 자기소개 문형이에요." },

@@ -910,11 +910,11 @@ const DOBIRA_COPY = {
   recall: {
     badge: { ko: "퀵 리뷰", vi: "Ôn nhanh" },
     icon: "hourglass",
-    title: { ko: "1차시 내용을 다시 떠올려봐요", vi: "Cùng nhớ lại nội dung buổi 1" },
+    title: { ko: "1차시 내용을 복습해요", vi: "Cùng ôn lại nội dung buổi 1" },
     lead: { ko: "질문을 보고 먼저 떠올린 다음, 눌러서 정답을 확인해요.", vi: "Xem câu hỏi, tự nhớ lại trước rồi nhấn để xem đáp án." },
     quick: {
       label: { ko: "학습 성과", vi: "Kết quả học tập" },
-      desc: { ko: "1차시 핵심 표현을 다시 기억해내며 2차시를 준비할 수 있어요.", vi: "Bạn sẽ ôn lại biểu hiện cốt lõi của buổi 1 để chuẩn bị cho buổi 2." },
+      desc: { ko: "배운 표현을 다시 떠올리고, 다음 학습을 준비할 수 있어요.", vi: "Bạn sẽ nhớ lại biểu hiện đã học và chuẩn bị cho buổi học tiếp theo." },
     },
   },
   vocabWordbook: {
