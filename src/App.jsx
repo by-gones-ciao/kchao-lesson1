@@ -1183,7 +1183,7 @@ function VocabStage({ patchSession, onComplete, onBack }) {
         <div className="pron-progress"><span style={{ width: `${pct}%` }} /></div>
         <button type="button" className="pron-close" aria-label="퀴즈 건너뛰기" onClick={finish}><XCircle size={26} /></button>
       </div>
-      <div className="stage-kicker"><BookIcon size={16} /> 어휘 문제 {qIndex + 1}/{items.length}</div>
+      <div className="stage-kicker"><BookIcon size={16} /> 단어 문제 {qIndex + 1}/{items.length}</div>
       <p className="pron-title">{QUIZ_PROMPTS[item.type]}</p>
 
       {item.type === "vi-to-ko" && (
@@ -1324,35 +1324,30 @@ function SentenceBuilder({ targetTokens, poolExtra, joinWith = "", onDone, onWro
   const pool = useMemo(() => shuffle(targetTokens.map((t, i) => ({ t, k: `t${i}` })).concat(
     poolExtra.map((t, i) => ({ t, k: `d${i}` }))
   )), [targetTokens, poolExtra]);
+  // placed tiles can be wrong — tapping never gets silently rejected anymore,
+  // so a learner can fill every blank (right or wrong) and only finds out via
+  // the 확인 button, same as keyboard mode already worked.
   const [placed, setPlaced] = useState([]);
-  const [usedKeys, setUsedKeys] = useState([]);
-  const [wrongKey, setWrongKey] = useState(null);
+  const [isDone, setIsDone] = useState(false);
+  const [tileWrong, setTileWrong] = useState(false);
   const [mode, setMode] = useState("tile");
   const [typed, setTyped] = useState("");
   const [typedWrong, setTypedWrong] = useState(false);
   const [hintKey, setHintKey] = useState(null);
-  const isDone = placed.length === targetTokens.length;
   const target = targetTokens.join(joinWith);
-
-  useEffect(() => {
-    if (isDone) {
-      const t = setTimeout(onDone, 700);
-      return () => clearTimeout(t);
-    }
-  }, [isDone]); // eslint-disable-line react-hooks/exhaustive-deps
+  const usedKeys = placed.map((p) => p.key);
 
   const clickTile = (tok, key) => {
-    if (usedKeys.includes(key) || isDone) return;
+    if (isDone) return;
     setHintKey(null);
-    const needed = targetTokens[placed.length];
-    if (tok === needed) {
-      setPlaced((p) => [...p, tok]);
-      setUsedKeys((u) => [...u, key]);
-    } else {
-      setWrongKey(key);
-      onWrong?.();
-      setTimeout(() => setWrongKey(null), 400);
+    const placedIndex = placed.findIndex((p) => p.key === key);
+    if (placedIndex !== -1) {
+      // only the most recently placed tile can be undone, to keep order clear
+      if (placedIndex === placed.length - 1) setPlaced((p) => p.slice(0, -1));
+      return;
     }
+    if (placed.length >= targetTokens.length) return;
+    setPlaced((p) => [...p, { tok, key }]);
   };
 
   const hint = () => {
@@ -1365,30 +1360,50 @@ function SentenceBuilder({ targetTokens, poolExtra, joinWith = "", onDone, onWro
   };
 
   const norm = (s) => s.trim().replace(/\s+/g, joinWith === " " ? " " : "");
+  const submitPlaced = () => {
+    const ok = placed.map((p) => p.tok).join(joinWith) === target;
+    if (ok) { setIsDone(true); setTimeout(onDone, 500); }
+    else { setTileWrong(true); onWrong?.(); setTimeout(() => setTileWrong(false), 500); }
+  };
   const submitTyped = () => {
     const ok = norm(typed) === norm(target);
-    if (ok) { setPlaced(targetTokens); onDone(); }
-    else { setTypedWrong(true); onWrong?.(); setTimeout(() => setTypedWrong(false), 500); }
+    if (ok) {
+      setPlaced(targetTokens.map((t, i) => ({ tok: t, key: `typed${i}` })));
+      setIsDone(true);
+      onDone();
+    } else { setTypedWrong(true); onWrong?.(); setTimeout(() => setTypedWrong(false), 500); }
   };
+
+  const placedText = placed.map((p) => p.tok).join(joinWith);
 
   return (
     <>
       {speaker ? (
         <div className="speak-blank-box">
           <button type="button" className="speak-blank-icon" aria-label="다시 듣기" onClick={speaker}><SpeakerIcon size={18} /></button>
-          <div className="single-blank-line">{placed.join(joinWith)}</div>
+          <div className={`single-blank-line ${tileWrong ? "wrong" : ""}`}>{placedText}</div>
         </div>
       ) : (
-        <div className="single-blank-line">{placed.join(joinWith)}</div>
+        <div className={`single-blank-line ${tileWrong ? "wrong" : ""}`}>{placedText}</div>
       )}
       {mode === "tile" ? (
-        <div className="tile-pool">
-          {pool.map(({ t, k }) => (
-            <button key={k} type="button" disabled={usedKeys.includes(k) || isDone}
-              className={`${wrongKey === k ? "wrong" : ""} ${usedKeys.includes(k) ? "used" : ""} ${hintKey === k ? "hinted" : ""}`}
-              onClick={() => clickTile(t, k)}>{t}</button>
-          ))}
-        </div>
+        <>
+          <div className="tile-pool">
+            {pool.map(({ t, k }) => {
+              const placedIndex = placed.findIndex((p) => p.key === k);
+              const used = placedIndex !== -1;
+              const removable = used && placedIndex === placed.length - 1;
+              const disabled = isDone || (used ? !removable : placed.length >= targetTokens.length);
+              return (
+                <button key={k} type="button" disabled={disabled}
+                  className={`${used ? "used" : ""} ${removable ? "removable" : ""} ${hintKey === k ? "hinted" : ""}`}
+                  onClick={() => clickTile(t, k)}>{t}</button>
+              );
+            })}
+          </div>
+          <button type="button" className="secondary-button" disabled={placed.length < targetTokens.length || isDone}
+            onClick={submitPlaced}>확인</button>
+        </>
       ) : (
         <div className="listen-type-actions">
           <input type="text" className={`listen-type-input ${typedWrong ? "wrong" : ""}`} value={typed}
