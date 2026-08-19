@@ -1,0 +1,480 @@
+<title>문법 설명 스텝별 안내 — 받침 하이라이트 목업</title>
+<style>
+  :root{
+    --teal:#00a8a6; --teal-dark:#008e8d; --teal-soft:#ddfbfa;
+    --ink:#04303d; --muted:#61727a; --line:#dce5e7;
+    --surface:#ffffff; --canvas:#f5f8f8;
+    --shadow:0 20px 55px rgb(4 48 61 / 12%);
+    --page-bg:#eef3f3; --page-ink:#3a4a4e;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --page-bg:#12181a; --page-ink:#c7d3d4; }
+  }
+  :root[data-theme="dark"]{ --page-bg:#12181a; --page-ink:#c7d3d4; }
+  :root[data-theme="light"]{ --page-bg:#eef3f3; --page-ink:#3a4a4e; }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0; min-height:100vh; padding:36px 20px 60px;
+    display:flex; flex-direction:column; align-items:center; gap:22px;
+    background:var(--page-bg);
+    font-family:Pretendard,"Noto Sans KR",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    color:var(--page-ink);
+  }
+
+  .brief{max-width:390px; width:100%; display:grid; gap:4px}
+  .brief .eyebrow{font-size:11px; font-weight:800; letter-spacing:.06em; color:var(--teal); text-transform:uppercase}
+  .brief h1{margin:0; font-size:19px; line-height:1.3; letter-spacing:-.02em; color:var(--page-ink)}
+  .brief p{margin:2px 0 0; font-size:12.5px; line-height:1.6; color:var(--page-ink); opacity:.72}
+
+  .phone{
+    width:390px; height:844px; max-width:100%;
+    background:var(--surface); border-radius:32px; box-shadow:var(--shadow);
+    border:1px solid rgb(4 48 61 / 7%);
+    overflow:hidden; position:relative; display:flex; flex-direction:column;
+    color:var(--ink);
+  }
+  .phone-header{
+    min-height:60px; padding:13px 15px 8px; flex:0 0 auto;
+    display:flex; align-items:center; gap:8px;
+    background:#fff; border-bottom:1px solid #eef2f3;
+  }
+  .phone-header span{font-size:11px; font-weight:850; color:var(--teal-dark); background:var(--teal-soft); padding:4px 9px; border-radius:7px}
+  .phone-header strong{font-size:14px; flex:1}
+  .lang-toggle{display:flex; border:1px solid var(--line); border-radius:999px; overflow:hidden; flex:0 0 auto}
+  .lang-toggle button{
+    min-width:32px; padding:4px 8px; border:0; background:#fff; color:var(--muted);
+    font-size:10px; font-weight:850; cursor:pointer;
+  }
+  .lang-toggle button[aria-selected="true"]{background:var(--teal); color:#fff}
+
+  .step-dots{padding:10px 16px 0; display:flex; gap:5px; flex:0 0 auto}
+  .step-dots i{flex:1; height:4px; border-radius:999px; background:#e2e8ea}
+  .step-dots i.done{background:var(--teal)}
+
+  .clip-wrap{flex:1; min-height:0; display:flex; flex-direction:column; justify-content:center; padding:16px}
+
+  .clip-card{border:1px solid var(--line); border-radius:16px; overflow:hidden; background:var(--canvas)}
+  .clip-stage{
+    position:relative; height:280px; padding:18px;
+    background:linear-gradient(180deg,var(--teal-soft) 0%,#f2fbfb 100%);
+  }
+
+  .stage-layer{
+    position:absolute; inset:0; padding:18px;
+    display:flex; align-items:center; justify-content:center; gap:18px; flex-direction:column;
+    opacity:0; transition:opacity .35s ease; pointer-events:none;
+  }
+  .stage-layer.show{opacity:1}
+  .stage-layer.row{flex-direction:row}
+
+  .topic-title{margin:0 0 12px; font-size:21px; font-weight:900; color:var(--ink); text-align:center; letter-spacing:-.01em}
+  .topic-row{width:100%; max-width:280px; display:flex; align-items:flex-start; gap:8px; margin-bottom:8px}
+  .topic-label{
+    flex:0 0 auto; margin-top:1px; font-size:10px; font-weight:850; color:var(--teal-dark);
+    background:var(--teal-soft); padding:3px 8px; border-radius:999px;
+  }
+  .topic-value{flex:1; font-size:12px; font-weight:700; color:var(--ink); line-height:1.5}
+  .topic-rule{margin:8px 0 0; font-size:13.5px; font-weight:900; line-height:1.5; color:var(--teal-dark); text-align:center}
+  .topic-rule b{color:var(--teal-dark)}
+
+  .intro-title{font-size:14px; font-weight:850; color:var(--ink); margin-bottom:12px; opacity:0; transition:opacity .3s ease; text-align:center}
+  .intro-title.show{opacity:1}
+  .batchim-table{border-collapse:collapse; opacity:0; transition:opacity .3s ease}
+  .batchim-table.show{opacity:1}
+  .batchim-table th{
+    font-size:11px; font-weight:850; color:var(--teal-dark); background:var(--teal-soft);
+    padding:7px 16px; border:1px solid var(--line);
+  }
+  .batchim-table td{
+    padding:8px 16px; border:1px solid var(--line); background:#fff; text-align:center;
+  }
+  .batchim-cell{display:flex; flex-direction:column; align-items:center; gap:4px}
+  .batchim-cell .syl{font-size:26px; font-weight:900; color:var(--ink); line-height:1}
+  .batchim-cell .tag{font-size:9px; font-weight:850; padding:2px 7px; border-radius:999px; color:#9aabb0; background:#f3f6f7}
+  .batchim-cell .tag.red{color:#c53a3a; background:#fde6e6}
+
+  .word-slot{display:flex; flex-direction:column; align-items:center; gap:8px; opacity:0; transform:translateY(8px); transition:opacity .35s ease, transform .35s ease}
+  .word-slot.show{opacity:1; transform:translateY(0)}
+
+  .word-line{display:flex; align-items:baseline; font-size:26px; font-weight:900; letter-spacing:-.01em; color:var(--ink)}
+  .batchim-syll{position:relative; display:inline-block; border-radius:8px; padding:0 2px; transition:background .3s ease, color .3s ease, box-shadow .3s ease}
+  .batchim-syll.hl{background:var(--teal-soft); color:var(--teal-dark); box-shadow:0 0 0 2px var(--teal) inset}
+  .batchim-syll.hl-none{background:#f3f6f7; color:#9aabb0; box-shadow:0 0 0 2px var(--line) inset}
+
+  .chip{font-size:10px; font-weight:850; padding:3px 8px; border-radius:999px; opacity:0; transition:opacity .3s ease}
+  .chip.show{opacity:1}
+  .chip.on{color:var(--teal-dark); background:var(--teal-soft)}
+  .chip.off{color:#7c8b92; background:#eef2f3}
+
+  .example-stack{position:absolute; inset:18px; display:flex; flex-direction:column; gap:12px; justify-content:center; opacity:0; transition:opacity .35s ease}
+  .example-stack.show{opacity:1}
+  .formula-card{
+    border:1px solid var(--line); border-radius:14px; background:#fff;
+    padding:12px 10px; display:flex; align-items:center; justify-content:center; gap:7px;
+    opacity:0; transform:scale(.92); transition:opacity .3s ease, transform .3s ease;
+  }
+  .formula-card.show{opacity:1; transform:scale(1)}
+  .fc-word-wrap{display:flex; flex-direction:column; align-items:center; gap:4px; opacity:0; transition:opacity .25s ease}
+  .fc-word-wrap.show{opacity:1}
+  .fc-word{font-size:17px; font-weight:900; color:var(--ink)}
+  .fc-batchim{font-size:9px; font-weight:850; padding:2px 7px; border-radius:999px}
+  .fc-batchim.on{color:var(--teal-dark); background:var(--teal-soft)}
+  .fc-batchim.off{color:#7c8b92; background:#eef2f3}
+  .fc-plus,.fc-eq{font-size:15px; font-weight:900; color:var(--muted); opacity:0; transition:opacity .25s ease}
+  .fc-plus.show,.fc-eq.show{opacity:1}
+  .fc-piece{
+    font-size:14px; font-weight:900; color:var(--ink); background:#f3f6f7; border:2px solid var(--line);
+    border-radius:8px; padding:6px 11px; opacity:0; transform:translateX(10px) scale(.85);
+    transition:opacity .3s ease, transform .4s cubic-bezier(.34,1.56,.64,1), border-color .25s ease, background .25s ease, color .25s ease;
+  }
+  .fc-piece.show{opacity:1; transform:translateX(0) scale(1)}
+  .fc-piece.joined{border-color:var(--teal); background:var(--teal-soft); color:var(--teal-dark)}
+  .fc-result{
+    font-size:15px; font-weight:900; color:var(--teal-dark); background:var(--teal-soft);
+    border-radius:8px; padding:6px 11px; opacity:0; transform:scale(.85);
+    transition:opacity .25s ease, transform .25s ease;
+  }
+  .fc-result.show{opacity:1; transform:scale(1)}
+
+  .sentence-mini{
+    opacity:0; transition:opacity .3s ease;
+    border:1px solid var(--line); border-radius:14px; background:#fff;
+    padding:14px 16px; text-align:center;
+  }
+  .sentence-mini.show{opacity:1}
+  .sentence-mini p{margin:0; font-size:15px; font-weight:800; line-height:1.65; color:var(--ink)}
+  .sentence-mini mark{background:none; color:var(--teal-dark); font-weight:900}
+
+  .rule-caption{
+    padding:12px 16px; text-align:center; font-size:12.5px; font-weight:750; color:var(--muted);
+    opacity:0; transition:opacity .35s ease; border-top:1px solid var(--line); background:#fff;
+  }
+  .rule-caption.show{opacity:1; color:var(--teal-dark)}
+  .rule-caption b{color:var(--ink)}
+
+  .caption-box{
+    margin-top:14px; padding:14px 16px; border-radius:14px;
+    background:var(--teal-soft); color:var(--teal-dark);
+    font-size:15px; font-weight:800; line-height:1.55; text-align:center;
+    min-height:52px; display:flex; align-items:center; justify-content:center;
+  }
+
+  .clip-controls{padding:12px 4px 0; flex:0 0 auto}
+  .step-nav-row{display:flex; align-items:center; gap:10px; margin-top:12px}
+  .nav-btn{
+    flex:1; min-height:44px; border:0; border-radius:10px; color:#fff; background:var(--teal);
+    font-size:14px; font-weight:850; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;
+  }
+  .nav-btn:hover:not(:disabled){background:var(--teal-dark)}
+  .nav-btn:disabled{background:#b9c1c8; cursor:not-allowed}
+  .nav-btn.ghost{background:#fff; color:var(--teal-dark); border:1px solid var(--line); flex:0 0 auto; width:56px}
+  .nav-btn.ghost:disabled{color:#b9c1c8; border-color:var(--line); background:#fff}
+  .step-count{text-align:center; margin:8px 0 0; font-size:11px; font-weight:750; color:var(--muted)}
+
+  .notes{max-width:390px; width:100%; display:grid; gap:10px; margin-top:6px}
+  .notes h3{margin:0; font-size:12.5px; font-weight:850; color:var(--page-ink)}
+  .notes ol{margin:0; padding-left:18px; display:grid; gap:6px; font-size:11.5px; line-height:1.55; color:var(--page-ink); opacity:.82}
+  .notes li b{opacity:1}
+
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important} }
+</style>
+
+<div class="brief">
+  <span class="eyebrow">스텝별 안내 목업 · 문법 설명 화면용</span>
+  <h1>받침 하이라이트 — 직접 넘기는 안내</h1>
+  <p>완전 초급 학습자를 위해 자동재생 대신, "다음"을 직접 눌러야 넘어가는 9단계 안내로 바꿨습니다. 맨 처음에 -이에요/-예요의 뜻과 받침 규칙을 짧게 알려주고, 그 다음 받침 있는 글자(방/눈/책)와 없는 글자(바/우/모)를 표로 비교해요. 1페이지만 우측 상단 KR/VT 버튼으로 베트남어 번역 샘플을 볼 수 있어요.</p>
+</div>
+
+<div class="phone">
+  <header class="phone-header">
+    <span>문법과 표현 1</span>
+    <strong>저는 N이에요/예요</strong>
+    <div class="lang-toggle" id="langToggle" role="tablist" aria-label="언어 선택">
+      <button type="button" role="tab" aria-selected="true" data-lang="ko">KR</button>
+      <button type="button" role="tab" aria-selected="false" data-lang="vi">VT</button>
+    </div>
+  </header>
+  <div class="step-dots" id="stepDots"></div>
+
+  <div class="clip-wrap">
+    <div class="clip-card">
+      <div class="clip-stage" id="stage">
+        <div class="stage-layer" id="topicLayer">
+          <p class="topic-title" id="topicTitle">-이에요 / -예요</p>
+          <div class="topic-row">
+            <span class="topic-label" id="topicLabel1">뜻</span>
+            <span class="topic-value" id="topicValue1">'~이다'라는 뜻이에요. 영어의 am/is/are와 비슷해요.</span>
+          </div>
+          <div class="topic-row">
+            <span class="topic-label" id="topicLabel2">언제</span>
+            <span class="topic-value" id="topicValue2">이름, 사람, 물건 등을 말할 때 사용해요.</span>
+          </div>
+          <p class="topic-rule" id="topicRule">받침이 있으면 <b>-이에요</b> · 받침이 없으면 <b>-예요</b></p>
+        </div>
+        <div class="stage-layer" id="introLayer">
+          <span class="intro-title show" id="introTitle">글자 밑에 빨간 표시가 "받침"이에요</span>
+          <table class="batchim-table show">
+            <thead><tr><th>받침 있는 글자</th><th>받침 없는 글자</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><div class="batchim-cell"><span class="syl">방</span><span class="tag red">받침 ㅇ</span></div></td>
+                <td><div class="batchim-cell"><span class="syl">바</span><span class="tag">받침 없음</span></div></td>
+              </tr>
+              <tr>
+                <td><div class="batchim-cell"><span class="syl">눈</span><span class="tag red">받침 ㄴ</span></div></td>
+                <td><div class="batchim-cell"><span class="syl">우</span><span class="tag">받침 없음</span></div></td>
+              </tr>
+              <tr>
+                <td><div class="batchim-cell"><span class="syl">책</span><span class="tag red">받침 ㄱ</span></div></td>
+                <td><div class="batchim-cell"><span class="syl">모</span><span class="tag">받침 없음</span></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="stage-layer row" id="wordsLayer">
+          <div class="word-slot" id="wordA">
+            <div class="word-line">
+              <span class="stem">유</span><span class="batchim-syll" id="syllA">진</span>
+            </div>
+            <span class="chip on" id="chipA">받침 있음</span>
+          </div>
+          <div class="word-slot" id="wordB">
+            <div class="word-line">
+              <span class="stem">타</span><span class="batchim-syll" id="syllB">오</span>
+            </div>
+            <span class="chip off" id="chipB">받침 없음</span>
+          </div>
+        </div>
+        <div class="stage-layer" id="exampleLayer">
+          <div class="example-stack" id="exampleA">
+            <div class="formula-card" id="cardA">
+              <div class="fc-word-wrap" id="wordWrapA">
+                <span class="fc-word">유진</span>
+                <span class="fc-batchim on">받침 O</span>
+              </div>
+              <span class="fc-plus" id="plusA">+</span>
+              <span class="fc-piece" id="pieceA2">-이에요</span>
+              <span class="fc-eq" id="eqSignA">=</span>
+              <span class="fc-result" id="eqResultA">유진이에요</span>
+            </div>
+            <div class="sentence-mini" id="sentA">
+              <p>안녕하세요? 저는 <mark>유진이에요</mark>.</p>
+            </div>
+          </div>
+          <div class="example-stack" id="exampleB">
+            <div class="formula-card" id="cardB">
+              <div class="fc-word-wrap" id="wordWrapB">
+                <span class="fc-word">타오</span>
+                <span class="fc-batchim off">받침 X</span>
+              </div>
+              <span class="fc-plus" id="plusB">+</span>
+              <span class="fc-piece" id="pieceB2">-예요</span>
+              <span class="fc-eq" id="eqSignB">=</span>
+              <span class="fc-result" id="eqResultB">타오예요</span>
+            </div>
+            <div class="sentence-mini" id="sentB">
+              <p>반가워요. 저는 <mark>타오예요</mark>.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="rule-caption" id="ruleCaption">받침 O → <b>-이에요</b> · 받침 X → <b>-예요</b></div>
+    </div>
+
+    <div class="caption-box" id="captionBox">-이에요/-예요는 이름이나 국적을 말할 때 써요.</div>
+
+    <div class="clip-controls">
+      <div class="step-nav-row">
+        <button type="button" class="nav-btn ghost" id="prevBtn" aria-label="이전 단계">
+          <svg width="16" height="16" viewBox="0 0 256 256" fill="none" stroke="currentColor" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"><path d="M165 208 93 128l72-80"/></svg>
+        </button>
+        <button type="button" class="nav-btn" id="nextBtn">
+          다음
+          <svg width="16" height="16" viewBox="0 0 256 256" fill="none" stroke="currentColor" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"><path d="M96 48l80 80-80 80"/></svg>
+        </button>
+      </div>
+      <p class="step-count" id="stepCount">1 / 9</p>
+    </div>
+  </div>
+</div>
+
+<div class="notes">
+  <h3>왜 이렇게 바꿨는지</h3>
+  <ol>
+    <li><b>시간이 아니라 이해가 기준.</b> 자동재생 클립은 정해진 초에 다음 장면으로 넘어가지만, 이 버전은 학습자가 "다음"을 눌러야만 넘어갑니다. 완전 초급 학습자가 자기 속도로 충분히 보고 넘어갈 수 있어요.</li>
+    <li><b>단계마다 쉬운 한 줄 설명.</b> 화면 아래 캡션 박스에 지금 무엇을 보고 있는지 짧고 쉬운 문장으로 알려줘요.</li>
+    <li><b>내용은 그대로.</b> 받침 개념 소개 → 단어 비교 → 공식 카드 → 문장 예시 → 규칙 정리, 순서와 그림은 자동재생 버전과 동일하고 넘기는 방식만 바뀌었어요.</li>
+  </ol>
+</div>
+
+<script>
+  const topicLayer = document.getElementById('topicLayer');
+  const introLayer = document.getElementById('introLayer');
+  const wordsLayer = document.getElementById('wordsLayer');
+  const wordA = document.getElementById('wordA');
+  const wordB = document.getElementById('wordB');
+  const syllA = document.getElementById('syllA');
+  const syllB = document.getElementById('syllB');
+  const chipA = document.getElementById('chipA');
+  const chipB = document.getElementById('chipB');
+  const exampleLayer = document.getElementById('exampleLayer');
+  const exampleA = document.getElementById('exampleA');
+  const cardA = document.getElementById('cardA');
+  const wordWrapA = document.getElementById('wordWrapA');
+  const pieceA2 = document.getElementById('pieceA2');
+  const plusA = document.getElementById('plusA');
+  const eqSignA = document.getElementById('eqSignA');
+  const eqResultA = document.getElementById('eqResultA');
+  const sentA = document.getElementById('sentA');
+  const exampleB = document.getElementById('exampleB');
+  const cardB = document.getElementById('cardB');
+  const wordWrapB = document.getElementById('wordWrapB');
+  const pieceB2 = document.getElementById('pieceB2');
+  const plusB = document.getElementById('plusB');
+  const eqSignB = document.getElementById('eqSignB');
+  const eqResultB = document.getElementById('eqResultB');
+  const sentB = document.getElementById('sentB');
+  const ruleCaption = document.getElementById('ruleCaption');
+  const captionBox = document.getElementById('captionBox');
+  const stepCount = document.getElementById('stepCount');
+  const stepDots = document.getElementById('stepDots');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const topicTitle = document.getElementById('topicTitle');
+  const topicLabel1 = document.getElementById('topicLabel1');
+  const topicValue1 = document.getElementById('topicValue1');
+  const topicLabel2 = document.getElementById('topicLabel2');
+  const topicValue2 = document.getElementById('topicValue2');
+  const topicRule = document.getElementById('topicRule');
+  const langToggle = document.getElementById('langToggle');
+
+  // 1페이지(문법 포인트)만 베트남어 번역 샘플로 제공 — 나머지 단계는 아직 한국어만
+  const PAGE1_I18N = {
+    ko: {
+      title: '-이에요 / -예요',
+      label1: '뜻', value1: "'~이다'라는 뜻이에요. 영어의 am/is/are와 비슷해요.",
+      label2: '언제', value2: '이름, 사람, 물건 등을 말할 때 사용해요.',
+      rule1: '받침이 있으면 ', rule1b: '-이에요', ruleMid: ' · ', rule2: '받침이 없으면 ', rule2b: '-예요',
+      caption: '-이에요/-예요는 이름이나 국적 등을 말할 때 써요. \'~이다\'라는 뜻이고, 영어의 am/is/are와 비슷해요. 앞 단어에 받침이 있으면 -이에요, 받침이 없으면 -예요를 써요.',
+    },
+    vi: {
+      title: '-이에요 / -예요',
+      label1: 'Nghĩa', value1: "Có nghĩa là 'là'. Giống với am/is/are trong tiếng Anh.",
+      label2: 'Khi nào', value2: 'Dùng khi nói về tên, người, đồ vật, v.v.',
+      rule1: 'Có phụ âm cuối: ', rule1b: '-이에요', ruleMid: ' · ', rule2: 'Không có: ', rule2b: '-예요',
+      caption: '-이에요/-예요 dùng để nói về tên, quốc tịch, v.v. Có nghĩa là \'là\', giống với am/is/are trong tiếng Anh. Nếu từ trước có phụ âm cuối (받침) thì dùng -이에요, nếu không có thì dùng -예요.',
+    },
+  };
+  let lang = 'ko';
+
+  function applyLang() {
+    const d = PAGE1_I18N[lang];
+    topicTitle.textContent = d.title;
+    topicLabel1.textContent = d.label1;
+    topicValue1.textContent = d.value1;
+    topicLabel2.textContent = d.label2;
+    topicValue2.textContent = d.value2;
+    topicRule.innerHTML = d.rule1 + '<b>' + d.rule1b + '</b>' + d.ruleMid + d.rule2 + '<b>' + d.rule2b + '</b>';
+    if (stepIndex === 0) captionBox.textContent = d.caption;
+  }
+
+  const STEPS = [
+    { t: 0, caption: '-이에요/-예요는 이름이나 국적 등을 말할 때 써요. \'~이다\'라는 뜻이고, 영어의 am/is/are와 비슷해요. 앞 단어에 받침이 있으면 -이에요, 받침이 없으면 -예요를 써요.', speak: null },
+    { t: 100, caption: '글자 밑에 빨간 표시를 보세요. 저게 "받침"이에요. 받침이 있는 글자도 있고, 없는 글자도 있어요.', speak: null },
+    { t: 4100, caption: '위의 두 이름 중에서 받침이 있는 것은 무엇일까요? "유진", "타오"', speak: '유진, 타오' },
+    { t: 6000, caption: '"유진"은 받침이 있어요. "타오"는 받침이 없어요.', speak: null },
+    { t: 10500, caption: '받침이 있으면 "-이에요"를 붙여요: 유진 + -이에요 = 유진이에요', speak: '유진이에요' },
+    { t: 11500, caption: '문장으로 써볼까요? "안녕하세요? 저는 유진이에요."', speak: '안녕하세요? 저는 유진이에요.' },
+    { t: 16500, caption: '받침이 없으면 "-예요"를 붙여요: 타오 + -예요 = 타오예요', speak: '타오예요' },
+    { t: 17500, caption: '문장으로 써볼까요? "반가워요. 저는 타오예요."', speak: '반가워요. 저는 타오예요.' },
+    { t: 21000, caption: '정리해요: 받침 있으면 "-이에요", 받침 없으면 "-예요"!', speak: null },
+  ];
+
+  let stepIndex = 0;
+
+  function on(t, threshold) { return t >= threshold; }
+
+  function render(t) {
+    topicLayer.classList.toggle('show', on(t, 0) && !on(t, 100));
+    introLayer.classList.toggle('show', on(t, 100) && !on(t, 4000));
+
+    wordsLayer.classList.toggle('show', on(t, 4000) && !on(t, 9000));
+    wordA.classList.toggle('show', on(t, 4100));
+    wordB.classList.toggle('show', on(t, 4100));
+    syllA.classList.toggle('hl', on(t, 6000));
+    syllB.classList.toggle('hl-none', on(t, 6000));
+    chipA.classList.toggle('show', on(t, 6000));
+    chipB.classList.toggle('show', on(t, 6000));
+
+    exampleLayer.classList.toggle('show', on(t, 9000));
+    exampleA.classList.toggle('show', on(t, 9000) && !on(t, 15000));
+    cardA.classList.toggle('show', on(t, 9000));
+    wordWrapA.classList.toggle('show', on(t, 9300));
+    plusA.classList.toggle('show', on(t, 9700));
+    pieceA2.classList.toggle('show', on(t, 10100));
+    pieceA2.classList.toggle('joined', on(t, 10500));
+    eqSignA.classList.toggle('show', on(t, 10500));
+    eqResultA.classList.toggle('show', on(t, 10500));
+    sentA.classList.toggle('show', on(t, 11500));
+
+    exampleB.classList.toggle('show', on(t, 15000));
+    cardB.classList.toggle('show', on(t, 15000));
+    wordWrapB.classList.toggle('show', on(t, 15300));
+    plusB.classList.toggle('show', on(t, 15700));
+    pieceB2.classList.toggle('show', on(t, 16100));
+    pieceB2.classList.toggle('joined', on(t, 16500));
+    eqSignB.classList.toggle('show', on(t, 16500));
+    eqResultB.classList.toggle('show', on(t, 16500));
+    sentB.classList.toggle('show', on(t, 17500));
+
+    ruleCaption.classList.toggle('show', on(t, 21000));
+  }
+
+  function speak(text) {
+    if (!text) return;
+    try {
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'ko-KR';
+      u.rate = 0.9;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+
+  function buildDots() {
+    stepDots.innerHTML = STEPS.map(() => '<i></i>').join('');
+  }
+
+  function goTo(index, { announce = true } = {}) {
+    stepIndex = Math.max(0, Math.min(STEPS.length - 1, index));
+    const step = STEPS[stepIndex];
+    render(step.t);
+    captionBox.textContent = step.caption;
+    if (stepIndex === 0) applyLang();
+    stepCount.textContent = (stepIndex + 1) + ' / ' + STEPS.length;
+    Array.from(stepDots.children).forEach((dot, i) => dot.classList.toggle('done', i <= stepIndex));
+    prevBtn.disabled = stepIndex === 0;
+    nextBtn.textContent = '';
+    nextBtn.innerHTML = stepIndex === STEPS.length - 1
+      ? '처음부터<svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor"><path d="M197.67 186.37A96 96 0 1 1 224 128a8 8 0 0 1-16 0 80 80 0 1 0-22.42 55.71l-14.6-3.91a8 8 0 0 1 4.14-15.46l32 8.58a8 8 0 0 1 5.66 9.79l-8.58 32a8 8 0 0 1-15.46-4.14Z"/></svg>'
+      : '다음<svg width="16" height="16" viewBox="0 0 256 256" fill="none" stroke="currentColor" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"><path d="M96 48l80 80-80 80"/></svg>';
+    if (announce) speak(step.speak);
+  }
+
+  prevBtn.addEventListener('click', () => goTo(stepIndex - 1));
+  nextBtn.addEventListener('click', () => {
+    if (stepIndex === STEPS.length - 1) { goTo(0); return; }
+    goTo(stepIndex + 1);
+  });
+  langToggle.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-lang]');
+    if (!btn) return;
+    lang = btn.dataset.lang;
+    langToggle.querySelectorAll('button').forEach((b) => b.setAttribute('aria-selected', String(b === btn)));
+    applyLang();
+  });
+
+  buildDots();
+  goTo(0, { announce: false });
+</script>
