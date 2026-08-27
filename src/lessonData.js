@@ -17,7 +17,7 @@ export const SESSIONS = [
 ];
 
 export const STAGE_ORDER = [
-  "mission", "recall", "context", "vocab", "grammar", "retry", "report",
+  "mission", "wordintro", "recall", "context", "vocab", "grammar", "retry", "report",
 ];
 
 export const SKILLS = ["어휘", "문법", "듣기", "읽기", "말하기", "쓰기"];
@@ -33,6 +33,62 @@ export const SESSION1 = {
     vi: "Học cách diễn đạt về quốc gia và quốc tịch để giới thiệu bản thân bằng tiếng Hàn.",
     pages: "p16, p20–21",
     artifact: "내 프로필 카드 · 이름",
+  },
+  // Auto-playing "단어 소개" slide sequence shown right after 학습 목표 and
+  // before 오늘의 단어. Each slide syncs Korean on-screen text to a Vietnamese
+  // narration clip (word-intro-N.wav) and advances on its own when the audio
+  // ends — the learner only taps to skip or replay.
+  wordIntro: {
+    slides: [
+      {
+        kind: "intro",
+        audio: "/media/word-intro-1.wav",
+        badge: { ko: "오늘의 단어", vi: "Từ vựng hôm nay" },
+        title: { ko: "나라와 국적", vi: "Quốc gia và quốc tịch" },
+        cards: [
+          { image: "/assets/word-intro/vietnam-flag.png", ko: "베트남", vi: "Việt Nam" },
+          { image: "/assets/word-intro/vietnam-person.png", ko: "베트남 사람", vi: "người Việt Nam" },
+        ],
+        bubble: {
+          ko: "‘베트남’은 나라이고 ‘베트남 사람’은 국적을 나타내요. ‘베트남’에 ‘사람’을 붙이면 국적이 돼요.",
+          vi: "‘베트남’ chỉ quốc gia, còn ‘베트남 사람’ chỉ quốc tịch. Thêm ‘사람’ vào ‘베트남’ thì thành quốc tịch.",
+        },
+      },
+      {
+        kind: "quiz",
+        audio: "/media/word-intro-2.wav",
+        badge: { ko: "문제 1", vi: "Câu 1" },
+        question: { ko: "국적을 나타내는 말을 고르세요.", vi: "Hãy chọn từ chỉ quốc tịch." },
+        choices: ["베트남", "베트남 사람"],
+        answer: 1,
+        bubble: {
+          ko: "다음 문제의 답을 맞춰 보세요. 정답이에요! ‘베트남’은 나라이고, ‘베트남 사람’은 국적을 나타내요.",
+          vi: "Hãy thử trả lời câu hỏi. Chính xác! ‘베트남’ là quốc gia, ‘베트남 사람’ chỉ quốc tịch.",
+        },
+      },
+      {
+        kind: "quiz",
+        audio: "/media/word-intro-3.wav",
+        badge: { ko: "문제 2", vi: "Câu 2" },
+        question: { ko: "빈칸에 들어갈 말을 고르세요.", vi: "Hãy chọn từ thích hợp để điền vào chỗ trống." },
+        equation: { left: "한국", right: "한국 사람" },
+        choices: ["나라", "사람"],
+        answer: 1,
+        bubble: {
+          ko: "다음 문제도 풀어 보세요. 맞았어요! 나라 이름(한국)에 ‘사람’을 붙이면 국적(한국 사람)을 나타낼 수 있어요.",
+          vi: "Cùng làm câu tiếp theo. Đúng rồi! Thêm ‘사람’ vào tên quốc gia (한국) thì diễn đạt được quốc tịch (한국 사람).",
+        },
+      },
+      {
+        kind: "outro",
+        audio: "/media/word-intro-4.wav",
+        image: "/assets/word-intro/excellent.png",
+        bubble: {
+          ko: "훌륭해요! 이제 더 많은 단어를 배워봐요.",
+          vi: "Tuyệt vời! Bây giờ mình học thêm nhiều từ nữa nhé.",
+        },
+      },
+    ],
   },
   // reviewed at the start of the *next* session's 퀵리뷰 (tap-to-reveal recall
   // cards) — covers 1차시's vocab (both directions), the 이에요/예요 batchim

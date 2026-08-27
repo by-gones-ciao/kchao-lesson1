@@ -23,7 +23,7 @@ function pick(lang, ko, vi) {
 }
 
 const STAGE_LABELS = {
-  mission: "학습 목표", recall: "지난 내용 회상", context: "상황 만나기", vocab: "핵심 어휘",
+  mission: "학습 목표", wordintro: "단어 소개", recall: "지난 내용 회상", context: "상황 만나기", vocab: "핵심 어휘",
   grammar: "표현 이해", listening: "듣고 확인", reading: "읽고 확인", dialogue: "교재 대화",
   speaking: "짧게 말하기", writing: "짧게 쓰기", mastery: "마스터 체크",
   retry: "오답 다시 풀기", report: "학습 리포트",
@@ -457,6 +457,7 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
   const canProceed = useMemo(() => {
     switch (session.stage) {
       case "mission": return true;
+      case "wordintro": return true;
       case "recall": return (session.recallLog?.length || 0) >= SESSION1.recall.items.length;
       case "context": return true;
       case "vocab": return session.vocabTouched.length >= 2;
@@ -494,6 +495,7 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
       <main className="learning-content" aria-labelledby="current-stage-label">
         <span id="current-stage-label" className="sr-only">{stageLabel}</span>
         {session.stage === "mission" && <MissionStage />}
+        {session.stage === "wordintro" && <WordIntroStage onComplete={goNext} onExit={goBack} />}
         {session.stage === "recall" && <RecallStage session={session} patchSession={patchSession} />}
         {session.stage === "context" && <ContextStage session={session} patchSession={patchSession} />}
         {session.stage === "vocab" && <VocabStage patchSession={patchSession} onComplete={goNext} onBack={goBack} />}
@@ -502,7 +504,11 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
         {session.stage === "report" && <LearningReportStage session={session} state={state} meta={meta} patchSession={patchSession} />}
       </main>
       <footer className="learning-footer">
-        {session.stage === "grammar" && session.grammar.view === "teachIntro" ? (
+        {session.stage === "wordintro" ? (
+          // 단어 소개 is a self-contained full-screen overlay — it owns its own
+          // 다음 / 이전 / ✕ controls, so the page footer stays empty here.
+          null
+        ) : session.stage === "grammar" && session.grammar.view === "teachIntro" ? (
           <button type="button" className="primary-button"
             onClick={() => patchSession((prev) => ({ grammar: { ...prev.grammar, view: "teach" } }))}>시작하기<ArrowRight /></button>
         ) : session.stage === "grammar" && !session.grammar.passed && session.grammar.view === "teach" ? (
@@ -629,6 +635,143 @@ function MissionStage() {
       <div className="stage-kicker">1차시 학습 목표</div>
       <h2 className="mission-goal-text">{pick(lang, m.ko, m.vi)}</h2>
       <div className="mission-image"><img alt="오늘 학습 상황" src={LESSON.heroImage} /></div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------
+// 단어 소개 — auto-playing slide sequence between 학습 목표 and 오늘의 단어.
+// Each slide plays a Vietnamese narration clip and advances itself when the
+// audio ends; the learner can replay a slide, step back, or skip the whole
+// sequence from the ✕ in the top bar.
+// ---------------------------------------------------------------------
+function WordIntroStage({ onComplete, onExit }) {
+  const { lang } = useLang();
+  const slides = SESSION1.wordIntro.slides;
+  const [index, setIndex] = useState(0);
+  const [revealed, setRevealed] = useState(false);
+  const [needsTap, setNeedsTap] = useState(false);
+  const audioRef = useRef(null);
+  const slide = slides[index];
+  const isLast = index >= slides.length - 1;
+
+  const advance = () => {
+    if (isLast) onComplete();
+    else setIndex((i) => i + 1);
+  };
+
+  // (re)start narration whenever the slide changes. Slides no longer advance
+  // on their own — the learner taps 다음 — so the audio only drives the quiz
+  // answer reveal; a timer is kept as a fallback when autoplay is blocked.
+  useEffect(() => {
+    setRevealed(false);
+    setNeedsTap(false);
+    const el = audioRef.current;
+    if (el) {
+      el.currentTime = 0;
+      const p = el.play();
+      if (p && typeof p.catch === "function") p.catch(() => setNeedsTap(true));
+    }
+    let t;
+    if (slide.kind === "quiz") t = setTimeout(() => setRevealed(true), 2200);
+    return () => t && clearTimeout(t);
+  }, [index]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const replay = () => {
+    const el = audioRef.current;
+    if (!el) return;
+    el.currentTime = 0;
+    const p = el.play();
+    if (p && typeof p.catch === "function") p.catch(() => setNeedsTap(true));
+    setNeedsTap(false);
+  };
+
+  const t = (field) => pick(lang, field.ko, field.vi);
+
+  return (
+    <div className="wordintro-overlay" role="group" aria-label="단어 소개">
+      <div className="pron-topbar">
+        <button type="button" className="pron-back" aria-label="이전"
+          onClick={() => (index > 0 ? setIndex(index - 1) : onExit())}><ArrowLeft size={22} /></button>
+        <div className="wordintro-segments" aria-label={`${index + 1}/${slides.length}`}>
+          {slides.map((_, i) => <span key={i} className={i <= index ? "on" : ""} />)}
+        </div>
+        <button type="button" className="pron-close" aria-label="단어 소개 건너뛰기" onClick={onComplete}><XCircle size={26} /></button>
+      </div>
+
+      <div className="wordintro-body">
+        {slide.kind === "intro" && (
+          <>
+            <span className="stage-kicker">{t(slide.badge)}</span>
+            <h2 className="wordintro-title">{slide.title.ko}
+              <em>{slide.title.vi}</em>
+            </h2>
+            <div className="wordintro-cards">
+              {slide.cards.map((c) => (
+                <figure key={c.ko}>
+                  <div className="wordintro-card-img"><img alt={c.ko} src={c.image} /></div>
+                  <figcaption><strong>{c.ko}</strong><span>{c.vi}</span></figcaption>
+                </figure>
+              ))}
+            </div>
+          </>
+        )}
+
+        {slide.kind === "quiz" && (
+          <>
+            <span className="stage-kicker">{t(slide.badge)}</span>
+            <h2 className="wordintro-title">{slide.question.ko}
+              <em>{slide.question.vi}</em>
+            </h2>
+            {slide.equation && (
+              <div className="wordintro-equation">
+                <span>{slide.equation.left}</span>
+                <b>+</b>
+                <span className={`slot ${revealed ? "filled" : ""}`}>{revealed ? slide.choices[slide.answer] : ""}</span>
+                <b>=</b>
+                <span>{slide.equation.right}</span>
+              </div>
+            )}
+            <ol className="wordintro-choices">
+              {slide.choices.map((c, i) => (
+                <li key={c} className={revealed && i === slide.answer ? "correct" : ""}>
+                  <span className="num">{i + 1}</span>{c}
+                  {revealed && i === slide.answer && <CheckCircle size={18} />}
+                </li>
+              ))}
+            </ol>
+          </>
+        )}
+
+        {slide.kind === "outro" && (
+          <div className="wordintro-outro">
+            <img alt="훌륭해요" src={slide.image} />
+          </div>
+        )}
+      </div>
+
+      <div className="wordintro-bubble-row">
+        <div className="wordintro-bubble">
+          <p>{slide.bubble.ko}</p>
+          <button type="button" className="wordintro-replay" aria-label="다시 듣기" onClick={replay}>
+            <SpeakerIcon size={16} />
+          </button>
+        </div>
+        <img className="wordintro-tutor" alt="선생님" src="/assets/word-intro/tutor.png" />
+      </div>
+
+      <button type="button" className="primary-button wordintro-next" onClick={advance}>
+        {isLast ? "학습 계속하기" : "다음"}<ArrowRight />
+      </button>
+
+      {needsTap && (
+        <button type="button" className="wordintro-tap-start" onClick={replay}>
+          <SpeakerIcon size={20} /> 눌러서 음성 재생
+        </button>
+      )}
+
+      <audio ref={audioRef} key={index} src={slide.audio} preload="auto"
+        onEnded={() => { if (slide.kind === "quiz") setRevealed(true); }} />
     </div>
   );
 }
