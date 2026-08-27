@@ -691,8 +691,6 @@ function WordIntroStage({ onComplete, onExit }) {
   return (
     <div className="wordintro-overlay" role="group" aria-label="단어 소개">
       <div className="pron-topbar">
-        <button type="button" className="pron-back" aria-label="이전"
-          onClick={() => (index > 0 ? setIndex(index - 1) : onExit())}><ArrowLeft size={22} /></button>
         <div className="wordintro-segments" aria-label={`${index + 1}/${slides.length}`}>
           {slides.map((_, i) => <span key={i} className={i <= index ? "on" : ""} />)}
         </div>
@@ -760,9 +758,13 @@ function WordIntroStage({ onComplete, onExit }) {
         <img className="wordintro-tutor" alt="선생님" src="/assets/word-intro/tutor.png" />
       </div>
 
-      <button type="button" className="primary-button wordintro-next" onClick={advance}>
-        {isLast ? "학습 계속하기" : "다음"}<ArrowRight />
-      </button>
+      <div className="wordintro-nav">
+        <button type="button" className="wordintro-prev" aria-label="이전"
+          onClick={() => (index > 0 ? setIndex(index - 1) : onExit())}><ArrowLeft size={20} /></button>
+        <button type="button" className="primary-button wordintro-next" onClick={advance}>
+          {isLast ? "학습 계속하기" : "다음"}<ArrowRight />
+        </button>
+      </div>
 
       {needsTap && (
         <button type="button" className="wordintro-tap-start" onClick={replay}>

@@ -301,5 +301,8 @@
 .wordintro-bubble span{display:block;margin-top:5px;font-size:10.5px;color:var(--muted);line-height:1.45;font-style:italic}
 .wordintro-replay{position:absolute;right:8px;top:10px;width:26px;height:26px;border:0;border-radius:50%;display:grid;place-items:center;color:var(--teal-dark);background:var(--teal-soft);cursor:pointer}
 .wordintro-tutor{width:88px;height:auto;align-self:end;object-fit:contain}
-.wordintro-next{flex:0 0 auto}
+.wordintro-nav{flex:0 0 auto;display:flex;gap:10px;align-items:stretch}
+.wordintro-nav .wordintro-next{flex:1;margin:0}
+.wordintro-prev{flex:0 0 auto;width:54px;min-height:48px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--muted);display:grid;place-items:center;cursor:pointer}
+.wordintro-prev:hover{background:var(--canvas);color:var(--ink)}
 .wordintro-tap-start{position:absolute;left:50%;top:64px;transform:translateX(-50%);display:flex;align-items:center;gap:6px;padding:9px 16px;border:0;border-radius:999px;background:var(--ink);color:#fff;font-size:12px;font-weight:800;box-shadow:0 8px 20px rgb(4 48 61 / 25%);cursor:pointer}
