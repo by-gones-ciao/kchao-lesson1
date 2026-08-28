@@ -819,7 +819,7 @@ function PracNarration({ screen, tutorImg, onNext }) {
   useEffect(() => { speakKo(screen.text); }, [screen.text]);
   return (
     <div className="prun-body prun-narr">
-      <span className="stage-kicker prun-grey-kicker">{screen.badge}</span>
+      <span className="stage-kicker">{screen.badge}</span>
       {screen.media && (
         <div className="prun-media" aria-hidden="true"><PlayCircleIcon size={40} /><span>동영상</span></div>
       )}
@@ -849,7 +849,7 @@ function PracListen({ d, onNext }) {
   }, [d]);
   return (
     <div className="prun-body">
-      <div className="stage-kicker prun-grey-kicker">실전 듣기</div>
+      <div className="stage-kicker">실전 듣기</div>
       <div className="pcheck-chat prun-chat">
         {d.dialogue.map((ln, li) => {
           const prev = d.dialogue[li - 1];
