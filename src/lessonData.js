@@ -230,11 +230,46 @@ export const SESSION1 = {
       ],
     },
   },
-  // 실전 확인 — learner-paced dialogue completion. Each screen is a 4-line
-  // two-person exchange; every blank offers two chips and the learner taps the
-  // right one. Strings are literal text; an object { b:[...], a:"..." } is a
-  // blank with its choices and answer.
+  // 실전 확인 — a four-part wrap-up activity (듣기 → 읽기 → 쓰기 → 확인 문제)
+  // that revisits the same short self-introduction dialogue in each mode, each
+  // part framed by a 선생님 narration screen and closed by a completion screen,
+  // then a final hand-off to the 학습 리포트.
   practiceCheck: {
+    speakers: {
+      a: { name: "하영", img: "/assets/practice/speaker-a.png" },
+      b: { name: "유키", img: "/assets/practice/speaker-b.png" },
+    },
+    tutorImg: "/assets/practice/tutor.png",
+    // the shared dialogue — reused across 듣기 / 읽기 / 쓰기
+    dialogue: [
+      { speaker: "a", ko: "안녕하세요? 저는 하영이에요.", vi: "Xin chào. Tôi là Ha-yeong." },
+      { speaker: "a", ko: "저는 한국 사람이에요.", vi: "Tôi là người Hàn Quốc." },
+      { speaker: "b", ko: "만나서 반가워요. 저는 유키예요.", vi: "Rất vui được gặp bạn. Tôi là Yuki." },
+      { speaker: "b", ko: "저는 일본 사람이에요.", vi: "Tôi là người Nhật Bản." },
+    ],
+    narrations: {
+      listen1: "먼저, 오늘 배운 내용을 대화문을 통해 다시 한번 잘 들어보세요.",
+      listen2: "이번에는 한국어 자막과 함께 잘 들어보세요. 필요하면 베트남어 해석도 같이 볼 수 있어요.",
+      read: "정말 잘했어요! 이제 대화문을 보고 마이크 버튼을 누른 후 따라 읽어보세요.",
+      write: "잘하고 있어요! 이제 대화문을 잘 듣고 자판을 이용해 직접 써 보세요.",
+      check: "훌륭해요! 마지막으로 실전 확인을 통해 오늘 배운 내용을 얼마나 잘 이해했는지 점검해 보세요.",
+    },
+    completes: {
+      listen: { ko: "실전 듣기를 완료했어요!", vi: "Bạn đã hoàn thành phần luyện nghe thực tế!" },
+      read: { ko: "실전 읽기 및 발음평가를 완료했어요!", vi: "Bạn đã hoàn thành phần luyện đọc thực tế và đánh giá phát âm!" },
+      write: { ko: "실전 쓰기를 완료했어요!", vi: "Bạn đã hoàn thành phần luyện viết thực tế!" },
+      check: { ko: "실전 확인을 완료했어요!", vi: "Bạn đã hoàn thành phần kiểm tra thực hành!" },
+    },
+    // 받아쓰기 — one card per speaker turn (its two lines dictated together)
+    writeItems: [
+      { speaker: "a", lines: [0, 1] },
+      { speaker: "b", lines: [2, 3] },
+    ],
+    finish: {
+      hi: "수고했어요!",
+      title: ["오늘 수업을 모두 완료했어요.", "나의 학습 리포트를 확인해 보세요."],
+      vi: ["Bạn đã làm rất tốt!", "Bạn đã hoàn thành toàn bộ bài học hôm nay.", "Hãy xem báo cáo học tập của bạn nhé."],
+    },
     title: {
       ko: "알맞은 답을 골라 대화를 완성하세요.",
       vi: "Hãy điền từ thích hợp vào chỗ trống để hoàn thành đoạn hội thoại.",

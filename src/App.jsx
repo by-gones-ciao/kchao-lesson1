@@ -497,11 +497,11 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
         <span id="current-stage-label" className="sr-only">{stageLabel}</span>
         {session.stage === "mission" && <MissionStage />}
         {session.stage === "wordintro" && <WordIntroStage onComplete={goNext} onExit={goBack} />}
-        {session.stage === "practice" && session.practiceFlow !== "quiz" && (
+        {session.stage === "practice" && session.practiceFlow !== "run" && (
           <div className="stage-section grammar-stage dobira-stage"><DobiraCard kind="practiceCheck" /></div>
         )}
-        {session.stage === "practice" && session.practiceFlow === "quiz" && (
-          <PracticeCheckStage onComplete={goNext} onExit={() => patchSession({ practiceFlow: "intro" })} />
+        {session.stage === "practice" && session.practiceFlow === "run" && (
+          <PracticeRunner onComplete={goNext} onExit={() => patchSession({ practiceFlow: "intro" })} />
         )}
         {session.stage === "recall" && <RecallStage session={session} patchSession={patchSession} />}
         {session.stage === "context" && <ContextStage session={session} patchSession={patchSession} />}
@@ -511,13 +511,13 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
         {session.stage === "report" && <LearningReportStage session={session} state={state} meta={meta} patchSession={patchSession} />}
       </main>
       <footer className="learning-footer">
-        {session.stage === "wordintro" || (session.stage === "practice" && session.practiceFlow === "quiz") ? (
-          // 단어 소개 / 실전 확인(문제) are self-contained full-screen overlays —
+        {session.stage === "wordintro" || (session.stage === "practice" && session.practiceFlow === "run") ? (
+          // 단어 소개 / 실전 확인 runner are self-contained full-screen overlays —
           // they own their 다음 / 이전 / ✕ controls, so the footer stays empty.
           null
-        ) : session.stage === "practice" && session.practiceFlow !== "quiz" ? (
+        ) : session.stage === "practice" && session.practiceFlow !== "run" ? (
           <button type="button" className="primary-button"
-            onClick={() => patchSession({ practiceFlow: "quiz" })}>시작하기<ArrowRight /></button>
+            onClick={() => patchSession({ practiceFlow: "run" })}>시작하기<ArrowRight /></button>
         ) : session.stage === "grammar" && session.grammar.view === "teachIntro" ? (
           <button type="button" className="primary-button"
             onClick={() => patchSession((prev) => ({ grammar: { ...prev.grammar, view: "teach" } }))}>시작하기<ArrowRight /></button>
@@ -789,87 +789,328 @@ function WordIntroStage({ onComplete, onExit }) {
 }
 
 // ---------------------------------------------------------------------
-// 실전 확인 — learner-paced dialogue completion. Each screen is a 4-line
-// two-person exchange; every blank has two chips and the learner taps the
-// correct one (wrong picks stay tappable so they can retry). 다음 unlocks
-// once every blank on the screen is right.
+// 실전 확인 — a four-part wrap-up (듣기 → 읽기 → 쓰기 → 확인 문제). One full-
+// screen runner walks a flat list of screens: a 선생님 narration, an
+// interactive screen, and a completion screen per part, then a final
+// hand-off to the 학습 리포트. Narration/line audio uses ko TTS; the mic
+// score and the pop-up feedback are prototype stand-ins.
 // ---------------------------------------------------------------------
-function PersonGlyph() {
+function GlobeGlyph() {
   return (
-    <svg width={15} height={15} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <circle cx="12" cy="8" r="4" />
-      <path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8Z" />
+    <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18M12 3c3 3.6 3 14.4 0 18M12 3c-3 3.6-3 14.4 0 18" />
     </svg>
   );
 }
 
-function PracticeCheckStage({ onComplete, onExit }) {
-  const data = SESSION1.practiceCheck;
-  const total = data.screens.length;
-  const [si, setSi] = useState(0);
-  const [picks, setPicks] = useState({});
-  const screen = data.screens[si];
-  const isLast = si >= total - 1;
-  const k = (li, pi) => `${si}-${li}-${pi}`;
-
-  const allCorrect = screen.lines.every((ln, li) =>
-    ln.parts.every((pt, pi) => typeof pt === "string" || picks[k(li, pi)] === pt.a));
-
-  const next = () => {
-    if (isLast) onComplete();
-    else setSi((v) => v + 1);
-  };
-
+function ChatRow({ speakerMeta, side, turnStart, children }) {
   return (
-    <div className="pron-overlay pcheck-overlay" role="group" aria-label="실전 확인">
-      <div className="pron-topbar">
-        <div className="pron-progress"><span style={{ width: `${((si + 1) / total) * 100}%` }} /></div>
-        <button type="button" className="pron-close" aria-label="실전 확인 건너뛰기" onClick={onComplete}><XCircle size={26} /></button>
+    <div className={`pcheck-row ${side} ${turnStart ? "turn-start" : ""}`}>
+      <span className="prun-avatar" aria-hidden="true">
+        {turnStart && speakerMeta && <img src={speakerMeta.img} alt={speakerMeta.name} />}
+      </span>
+      {children}
+    </div>
+  );
+}
+
+function PracNarration({ screen, tutorImg, onNext }) {
+  useEffect(() => { speakKo(screen.text); }, [screen.text]);
+  return (
+    <div className="prun-body prun-narr">
+      <span className="stage-kicker prun-grey-kicker">{screen.badge}</span>
+      {screen.media && (
+        <div className="prun-media" aria-hidden="true"><PlayCircleIcon size={40} /><span>동영상</span></div>
+      )}
+      <div className="prun-spacer" />
+      <div className="prun-bubble-row">
+        <div className="prun-bubble">
+          <p>{screen.text}</p>
+          <button type="button" className="prun-replay" aria-label="다시 듣기" onClick={() => speakKo(screen.text)}>
+            <SpeakerIcon size={15} />
+          </button>
+        </div>
+        <img className="prun-tutor" alt="선생님" src={tutorImg} />
       </div>
+      <button type="button" className="primary-button prun-next" onClick={onNext}>다음<ArrowRight /></button>
+    </div>
+  );
+}
 
-      <div className="stage-kicker">실전 확인 · {si + 1}/{total}</div>
-      <h2 className="pcheck-title">{data.title.ko}
-        <em>{data.title.vi}</em>
-      </h2>
+function PracListen({ d, onNext }) {
+  const [vi, setVi] = useState({});
+  useEffect(() => {
+    let cancelled = false;
+    d.dialogue.forEach((ln, idx) => {
+      setTimeout(() => { if (!cancelled) speakKo(ln.ko); }, idx * 1900);
+    });
+    return () => { cancelled = true; window.speechSynthesis?.cancel(); };
+  }, [d]);
+  return (
+    <div className="prun-body">
+      <div className="stage-kicker prun-grey-kicker">실전 듣기</div>
+      <div className="pcheck-chat prun-chat">
+        {d.dialogue.map((ln, li) => {
+          const prev = d.dialogue[li - 1];
+          return (
+            <ChatRow key={li} side={ln.speaker} speakerMeta={d.speakers[ln.speaker]}
+              turnStart={!prev || prev.speaker !== ln.speaker}>
+              <div className="pcheck-bubble prun-listen-bubble">
+                <strong>{ln.ko}</strong>
+                {vi[li] && <span className="prun-vi">{ln.vi}</span>}
+                <span className="prun-line-tools">
+                  <button type="button" aria-label="해석 보기" className={vi[li] ? "on" : ""}
+                    onClick={() => setVi((v) => ({ ...v, [li]: !v[li] }))}><GlobeGlyph /></button>
+                  <button type="button" aria-label="다시 듣기" onClick={() => speakKo(ln.ko)}><SpeakerIcon size={13} /></button>
+                </span>
+              </div>
+            </ChatRow>
+          );
+        })}
+      </div>
+      <button type="button" className="primary-button prun-next" onClick={onNext}>다음<ArrowRight /></button>
+    </div>
+  );
+}
 
-      <div className="pcheck-chat">
+function PracRead({ d, lineIndex, onNext }) {
+  const ln = d.dialogue[lineIndex];
+  const [phase, setPhase] = useState("idle");
+  const [score, setScore] = useState(null);
+  const recRef = useRef(null);
+  useEffect(() => { setPhase("idle"); setScore(null); speakKo(ln.ko); }, [lineIndex]); // eslint-disable-line react-hooks/exhaustive-deps
+  const finish = () => { setScore(50 + Math.floor(Math.random() * 41)); setPhase("done"); };
+  const onMic = async () => {
+    if (phase === "recording") { recRef.current?.stop(); return; }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const rec = new MediaRecorder(stream);
+      rec.onstop = () => { stream.getTracks().forEach((t) => t.stop()); finish(); };
+      recRef.current = rec; rec.start(); setPhase("recording");
+      setTimeout(() => { if (rec.state === "recording") rec.stop(); }, 3000);
+    } catch { finish(); }
+  };
+  return (
+    <div className="prun-body">
+      <h2 className="prun-title">대화문을 보고 따라 말하세요.<em>Hãy nhìn hội thoại và nói theo.</em></h2>
+      <div className="pcheck-chat prun-chat">
+        <ChatRow side={ln.speaker} speakerMeta={d.speakers[ln.speaker]} turnStart>
+          <div className="pcheck-bubble prun-listen-bubble">
+            <strong>{ln.ko}</strong>
+            <span className="prun-line-tools">
+              <button type="button" aria-label="다시 듣기" onClick={() => speakKo(ln.ko)}><SpeakerIcon size={13} /></button>
+            </span>
+          </div>
+        </ChatRow>
+      </div>
+      <div className="prun-spacer" />
+      {phase !== "done" ? (
+        <div className="prun-mic-wrap">
+          <button type="button" className={`prun-mic ${phase === "recording" ? "on" : ""}`} aria-label="따라 말하기" onClick={onMic}>
+            <MicIcon size={26} />
+          </button>
+          <small>{phase === "recording" ? "녹음 중이에요…" : "마이크를 누르고 따라 말하세요."}</small>
+        </div>
+      ) : (
+        <div className="prun-toast ok">
+          <div className="prun-score-row">
+            <span><CheckCircle size={15} /> 내 발음 점수: <strong>{score}</strong></span>
+            <button type="button" className="prun-detail">상세 보기</button>
+          </div>
+          <div className="prun-toast-actions">
+            <button type="button" className="secondary-button" onClick={() => { setPhase("idle"); setScore(null); }}>
+              <MicIcon size={15} /> 다시하기
+            </button>
+            <button type="button" className="primary-button" onClick={onNext}>다음</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const normKo = (s) => s.replace(/[\s.,?!]/g, "");
+
+function PracWrite({ d, itemIndex, onNext }) {
+  const item = d.writeItems[itemIndex];
+  const targets = item.lines.map((li) => d.dialogue[li]);
+  const [typed, setTyped] = useState(() => targets.map(() => ""));
+  const [result, setResult] = useState(null);
+  const [hint, setHint] = useState(false);
+  const playAll = () => targets.forEach((t, i) => setTimeout(() => speakKo(t.ko), i * 1900));
+  useEffect(() => { setTyped(targets.map(() => "")); setResult(null); setHint(false); playAll(); }, [itemIndex]); // eslint-disable-line react-hooks/exhaustive-deps
+  const check = () => setResult(typed.every((v, i) => normKo(v) === normKo(targets[i].ko)) ? "ok" : "no");
+  return (
+    <div className="prun-body">
+      <h2 className="prun-title">대화문을 잘 듣고 써 보세요.<em>Hãy nghe kỹ hội thoại và viết lại.</em></h2>
+      <div className="prun-write-head">
+        <span className="prun-avatar"><img src={d.speakers[item.speaker].img} alt={d.speakers[item.speaker].name} /></span>
+        <button type="button" className="prun-inline-speak" aria-label="다시 듣기" onClick={playAll}><SpeakerIcon size={15} /></button>
+        <button type="button" className={`prun-hint-btn ${hint ? "on" : ""}`} aria-label="힌트" onClick={() => setHint((v) => !v)}>
+          <LightbulbIcon size={15} />
+        </button>
+      </div>
+      <div className={`prun-write-card ${result === "no" ? "wrong" : ""}`}>
+        {targets.map((t, i) => (
+          <input key={i} className="prun-write-input" value={typed[i]} disabled={result === "ok"}
+            placeholder="여기에 한국어로 쓰세요" aria-label={`${i + 1}번째 문장`}
+            onChange={(e) => setTyped((p) => p.map((v, j) => (j === i ? e.target.value : v)))} />
+        ))}
+      </div>
+      <div className="prun-write-vi">{targets.map((t) => <span key={t.ko}>{t.vi}</span>)}</div>
+      {hint && <div className="prun-hint-box">힌트: {targets.map((t) => t.ko).join("  ")}</div>}
+      <div className="prun-spacer" />
+      {result !== "ok" && (
+        <button type="button" className="secondary-button prun-confirm" disabled={typed.some((v) => !v.trim())} onClick={check}>확인</button>
+      )}
+      {result && (
+        <div className={`prun-toast ${result === "ok" ? "ok" : "no"}`}>
+          <strong>{result === "ok" ? "정답이에요" : "오답이에요"}</strong>
+          {result === "no" && targets.map((t) => <p key={t.ko}>{t.ko}</p>)}
+          <div className="prun-toast-actions">
+            {result === "no" && (
+              <button type="button" className="secondary-button" onClick={() => { setResult(null); setTyped(targets.map(() => "")); }}>다시하기</button>
+            )}
+            <button type="button" className="primary-button" onClick={onNext}>다음</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PracQuiz({ d, screenIndex, onNext }) {
+  const screen = d.screens[screenIndex];
+  const [picks, setPicks] = useState({});
+  const [submitted, setSubmitted] = useState(false);
+  const key = (li, pi) => `${li}-${pi}`;
+  const blanks = [];
+  screen.lines.forEach((ln, li) => ln.parts.forEach((pt, pi) => { if (typeof pt !== "string") blanks.push([li, pi]); }));
+  const allChosen = blanks.every(([li, pi]) => picks[key(li, pi)]);
+  const wrongLines = screen.lines.filter((ln, li) =>
+    ln.parts.some((pt, pi) => typeof pt !== "string" && picks[key(li, pi)] !== pt.a));
+  const allCorrect = submitted && wrongLines.length === 0;
+  const lineText = (ln) => ln.parts.map((pt) => (typeof pt === "string" ? pt : pt.a)).join("").replace(/\s+/g, " ").trim();
+  return (
+    <div className="prun-body">
+      <div className="stage-kicker">실전 확인 · {screenIndex + 1}/{d.screens.length}</div>
+      <h2 className="pcheck-title">{d.title.ko}<em>{d.title.vi}</em></h2>
+      <div className="pcheck-chat prun-chat">
         {screen.lines.map((ln, li) => {
           const prev = screen.lines[li - 1];
-          const turnStart = !prev || prev.speaker !== ln.speaker;
           return (
-            <div key={li} className={`pcheck-row ${ln.speaker} ${turnStart ? "turn-start" : ""}`}>
-              <span className="pcheck-avatar" aria-hidden="true">{turnStart && <PersonGlyph />}</span>
+            <ChatRow key={li} side={ln.speaker} speakerMeta={d.speakers[ln.speaker]}
+              turnStart={!prev || prev.speaker !== ln.speaker}>
               <p className="pcheck-bubble">
                 {ln.parts.map((pt, pi) => {
                   if (typeof pt === "string") return <span key={pi}>{pt}</span>;
-                  const chosen = picks[k(li, pi)];
-                  const solved = chosen === pt.a;
+                  const chosen = picks[key(li, pi)];
                   return (
                     <span key={pi} className="pcheck-blank">
                       {pt.b.map((opt) => {
                         let cls = "";
-                        if (chosen === opt) cls = opt === pt.a ? "correct" : "wrong";
+                        if (submitted && chosen === opt) cls = opt === pt.a ? "correct" : "wrong";
+                        else if (chosen === opt) cls = "chosen";
                         return (
-                          <button key={opt} type="button" className={`pcheck-chip ${cls}`} disabled={solved}
-                            onClick={() => setPicks((p) => ({ ...p, [k(li, pi)]: opt }))}>{opt}</button>
+                          <button key={opt} type="button" className={`pcheck-chip ${cls}`} disabled={submitted}
+                            onClick={() => setPicks((p) => ({ ...p, [key(li, pi)]: opt }))}>{opt}</button>
                         );
                       })}
                     </span>
                   );
                 })}
               </p>
-            </div>
+            </ChatRow>
           );
         })}
       </div>
+      {!submitted ? (
+        <button type="button" className="secondary-button prun-confirm" disabled={!allChosen} onClick={() => setSubmitted(true)}>확인</button>
+      ) : (
+        <div className={`prun-toast ${allCorrect ? "ok" : "no"}`}>
+          <strong>{allCorrect ? "정답이에요" : "틀린 부분을 확인해 보세요"}</strong>
+          {!allCorrect && wrongLines.map((ln, x) => <p key={x}>{lineText(ln)}</p>)}
+          <div className="prun-toast-actions">
+            {!allCorrect && (
+              <button type="button" className="secondary-button" onClick={() => { setSubmitted(false); setPicks({}); }}>다시하기</button>
+            )}
+            <button type="button" className="primary-button" onClick={onNext}>다음</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
-      <div className="pcheck-footer">
-        <button type="button" className="wordintro-prev" aria-label="이전"
-          onClick={() => (si > 0 ? setSi(si - 1) : onExit())}><ArrowLeft size={20} /></button>
-        <button type="button" className="primary-button" disabled={!allCorrect} onClick={next}>
-          {isLast ? "실전 확인 완료" : "다음"}<ArrowRight />
-        </button>
+function PracComplete({ c, onNext }) {
+  return (
+    <div className="prun-body prun-center">
+      <div className="prun-check"><CheckCircle size={30} /></div>
+      <h2>{c.ko}</h2>
+      <p>{c.vi}</p>
+      <button type="button" className="primary-button prun-next" onClick={onNext}>완료</button>
+    </div>
+  );
+}
+
+function PracFinish({ d, onNext }) {
+  useEffect(() => { speakKo(`${d.finish.hi} ${d.finish.title.join(" ")}`); }, [d]);
+  return (
+    <div className="prun-body prun-center prun-finish">
+      <div className="prun-confetti" aria-hidden="true">🎉</div>
+      <strong>{d.finish.hi}</strong>
+      {d.finish.title.map((t) => <h2 key={t}>{t}</h2>)}
+      <p>{d.finish.vi.join(" ")}</p>
+      <img className="prun-tutor-full" alt="선생님" src={d.tutorImg} />
+      <button type="button" className="primary-button prun-next" onClick={onNext}>학습 리포트 보기<ArrowRight /></button>
+    </div>
+  );
+}
+
+function PracticeRunner({ onComplete, onExit }) {
+  const d = SESSION1.practiceCheck;
+  const screens = useMemo(() => {
+    const s = [
+      { t: "narration", part: "listen", badge: "실전 듣기", text: d.narrations.listen1, media: true },
+      { t: "narration", part: "listen", badge: "실전 듣기", text: d.narrations.listen2 },
+      { t: "listen" },
+      { t: "complete", c: d.completes.listen },
+      { t: "narration", part: "read", badge: "실전 읽기", text: d.narrations.read },
+    ];
+    d.dialogue.forEach((_, li) => s.push({ t: "read", li }));
+    s.push({ t: "complete", c: d.completes.read });
+    s.push({ t: "narration", part: "write", badge: "실전 쓰기", text: d.narrations.write });
+    d.writeItems.forEach((_, wi) => s.push({ t: "write", wi }));
+    s.push({ t: "complete", c: d.completes.write });
+    s.push({ t: "narration", part: "check", badge: "실전 확인", text: d.narrations.check });
+    d.screens.forEach((_, qi) => s.push({ t: "quiz", qi }));
+    s.push({ t: "complete", c: d.completes.check });
+    s.push({ t: "finish" });
+    return s;
+  }, [d]);
+
+  const [i, setI] = useState(0);
+  const total = screens.length;
+  const cur = screens[i];
+  const next = () => (i >= total - 1 ? onComplete() : setI(i + 1));
+  const back = () => (i === 0 ? onExit() : setI(i - 1));
+
+  return (
+    <div className="pron-overlay prun-overlay" role="group" aria-label="실전 확인">
+      <div className="pron-topbar">
+        <button type="button" className="pron-back" aria-label="이전" onClick={back}><ArrowLeft size={20} /></button>
+        <div className="pron-progress"><span style={{ width: `${((i + 1) / total) * 100}%` }} /></div>
+        <button type="button" className="pron-close" aria-label="실전 확인 건너뛰기" onClick={onComplete}><XCircle size={24} /></button>
       </div>
+
+      {cur.t === "narration" && <PracNarration key={i} screen={cur} tutorImg={d.tutorImg} onNext={next} />}
+      {cur.t === "listen" && <PracListen key={i} d={d} onNext={next} />}
+      {cur.t === "read" && <PracRead key={i} d={d} lineIndex={cur.li} onNext={next} />}
+      {cur.t === "write" && <PracWrite key={i} d={d} itemIndex={cur.wi} onNext={next} />}
+      {cur.t === "quiz" && <PracQuiz key={i} d={d} screenIndex={cur.qi} onNext={next} />}
+      {cur.t === "complete" && <PracComplete key={i} c={cur.c} onNext={next} />}
+      {cur.t === "finish" && <PracFinish key={i} d={d} onNext={next} />}
     </div>
   );
 }
