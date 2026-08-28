@@ -815,13 +815,15 @@ function ChatRow({ speakerMeta, side, turnStart, children }) {
   );
 }
 
-function PracNarration({ screen, tutorImg, onNext }) {
+function PracNarration({ screen, tutorImg, video, onNext }) {
   useEffect(() => { speakKo(screen.text); }, [screen.text]);
   return (
     <div className="prun-body prun-narr">
       <span className="stage-kicker">{screen.badge}</span>
       {screen.media && (
-        <div className="prun-media" aria-hidden="true"><PlayCircleIcon size={40} /><span>동영상</span></div>
+        video
+          ? <video className="prun-media" src={video} controls playsInline preload="metadata" />
+          : <div className="prun-media" aria-hidden="true"><PlayCircleIcon size={40} /><span>동영상</span></div>
       )}
       <div className="prun-spacer" />
       <div className="prun-bubble-row">
@@ -1104,7 +1106,7 @@ function PracticeRunner({ onComplete, onExit }) {
         <button type="button" className="pron-close" aria-label="실전 확인 건너뛰기" onClick={onComplete}><XCircle size={24} /></button>
       </div>
 
-      {cur.t === "narration" && <PracNarration key={i} screen={cur} tutorImg={d.tutorImg} onNext={next} />}
+      {cur.t === "narration" && <PracNarration key={i} screen={cur} tutorImg={d.tutorImg} video={cur.media ? d.listenVideo : null} onNext={next} />}
       {cur.t === "listen" && <PracListen key={i} d={d} onNext={next} />}
       {cur.t === "read" && <PracRead key={i} d={d} lineIndex={cur.li} onNext={next} />}
       {cur.t === "write" && <PracWrite key={i} d={d} itemIndex={cur.wi} onNext={next} />}

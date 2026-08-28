@@ -240,6 +240,7 @@ export const SESSION1 = {
       b: { name: "유키", img: "/assets/practice/speaker-b.png" },
     },
     tutorImg: "/assets/practice/tutor.png",
+    listenVideo: "/media/practice-listen-sample.mp4",
     // the shared dialogue — reused across 듣기 / 읽기 / 쓰기
     dialogue: [
       { speaker: "a", ko: "안녕하세요? 저는 하영이에요.", vi: "Xin chào. Tôi là Ha-yeong." },

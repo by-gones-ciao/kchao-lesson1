@@ -354,6 +354,7 @@
 .prun-line-tools button.on{background:var(--teal);color:#fff}
 /* narration */
 .prun-narr .prun-media{height:150px;margin:14px 0 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border:1px dashed #c3d2d5;border-radius:16px;background:var(--canvas);color:#8ba0a6;font-size:11px;font-weight:700}
+.prun-narr video.prun-media{height:auto;aspect-ratio:16/9;border:0;background:#04303d;object-fit:contain}
 .prun-bubble-row{flex:0 0 auto;display:grid;grid-template-columns:1fr 84px;align-items:end;gap:6px;margin-bottom:8px}
 .prun-bubble{position:relative;padding:12px 38px 12px 14px;border-radius:14px 14px 4px 14px;background:#fff;border:1px solid #bfe9e8;box-shadow:0 8px 20px rgb(4 48 61 / 8%)}
 .prun-bubble p{margin:0;font-size:12.5px;font-weight:750;line-height:1.6;color:var(--ink);word-break:keep-all}
