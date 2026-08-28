@@ -23,7 +23,7 @@ function pick(lang, ko, vi) {
 }
 
 const STAGE_LABELS = {
-  mission: "학습 목표", wordintro: "단어 소개", recall: "지난 내용 회상", context: "상황 만나기", vocab: "핵심 어휘",
+  mission: "학습 목표", wordintro: "단어 소개", practice: "실전 확인", recall: "지난 내용 회상", context: "상황 만나기", vocab: "핵심 어휘",
   grammar: "표현 이해", listening: "듣고 확인", reading: "읽고 확인", dialogue: "교재 대화",
   speaking: "짧게 말하기", writing: "짧게 쓰기", mastery: "마스터 체크",
   retry: "오답 다시 풀기", report: "학습 리포트",
@@ -458,6 +458,7 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
     switch (session.stage) {
       case "mission": return true;
       case "wordintro": return true;
+      case "practice": return true;
       case "recall": return (session.recallLog?.length || 0) >= SESSION1.recall.items.length;
       case "context": return true;
       case "vocab": return session.vocabTouched.length >= 2;
@@ -496,6 +497,7 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
         <span id="current-stage-label" className="sr-only">{stageLabel}</span>
         {session.stage === "mission" && <MissionStage />}
         {session.stage === "wordintro" && <WordIntroStage onComplete={goNext} onExit={goBack} />}
+        {session.stage === "practice" && <PracticeCheckStage onComplete={goNext} onExit={goBack} />}
         {session.stage === "recall" && <RecallStage session={session} patchSession={patchSession} />}
         {session.stage === "context" && <ContextStage session={session} patchSession={patchSession} />}
         {session.stage === "vocab" && <VocabStage patchSession={patchSession} onComplete={goNext} onBack={goBack} />}
@@ -504,9 +506,9 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
         {session.stage === "report" && <LearningReportStage session={session} state={state} meta={meta} patchSession={patchSession} />}
       </main>
       <footer className="learning-footer">
-        {session.stage === "wordintro" ? (
-          // 단어 소개 is a self-contained full-screen overlay — it owns its own
-          // 다음 / 이전 / ✕ controls, so the page footer stays empty here.
+        {session.stage === "wordintro" || session.stage === "practice" ? (
+          // 단어 소개 / 실전 확인 are self-contained full-screen overlays — they
+          // own their 다음 / 이전 / ✕ controls, so the page footer stays empty.
           null
         ) : session.stage === "grammar" && session.grammar.view === "teachIntro" ? (
           <button type="button" className="primary-button"
@@ -774,6 +776,76 @@ function WordIntroStage({ onComplete, onExit }) {
 
       <audio ref={audioRef} key={index} src={slide.audio} preload="auto"
         onEnded={() => { if (slide.kind === "quiz") setRevealed(true); }} />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------
+// 실전 확인 — learner-paced dialogue completion. Each screen is a 4-line
+// two-person exchange; every blank has two chips and the learner taps the
+// correct one (wrong picks stay tappable so they can retry). 다음 unlocks
+// once every blank on the screen is right.
+// ---------------------------------------------------------------------
+function PracticeCheckStage({ onComplete, onExit }) {
+  const data = SESSION1.practiceCheck;
+  const total = data.screens.length;
+  const [si, setSi] = useState(0);
+  const [picks, setPicks] = useState({});
+  const screen = data.screens[si];
+  const isLast = si >= total - 1;
+  const k = (li, pi) => `${si}-${li}-${pi}`;
+
+  const allCorrect = screen.lines.every((ln, li) =>
+    ln.parts.every((pt, pi) => typeof pt === "string" || picks[k(li, pi)] === pt.a));
+
+  const next = () => {
+    if (isLast) onComplete();
+    else setSi((v) => v + 1);
+  };
+
+  return (
+    <div className="pron-overlay pcheck-overlay" role="group" aria-label="실전 확인">
+      <div className="pron-topbar">
+        <div className="pron-progress"><span style={{ width: `${((si + 1) / total) * 100}%` }} /></div>
+        <button type="button" className="pron-close" aria-label="실전 확인 건너뛰기" onClick={onComplete}><XCircle size={26} /></button>
+      </div>
+
+      <div className="stage-kicker">실전 확인 · {si + 1}/{total}</div>
+      <h2 className="pcheck-title">{data.title.ko}
+        <em>{data.title.vi}</em>
+      </h2>
+
+      <div className="pcheck-lines">
+        {screen.lines.map((ln, li) => (
+          <p key={li} className={`pcheck-line ${ln.speaker}`}>
+            {ln.parts.map((pt, pi) => {
+              if (typeof pt === "string") return <span key={pi}>{pt}</span>;
+              const chosen = picks[k(li, pi)];
+              const solved = chosen === pt.a;
+              return (
+                <span key={pi} className="pcheck-blank">
+                  {pt.b.map((opt) => {
+                    let cls = "";
+                    if (chosen === opt) cls = opt === pt.a ? "correct" : "wrong";
+                    return (
+                      <button key={opt} type="button" className={`pcheck-chip ${cls}`} disabled={solved}
+                        onClick={() => setPicks((p) => ({ ...p, [k(li, pi)]: opt }))}>{opt}</button>
+                    );
+                  })}
+                </span>
+              );
+            })}
+          </p>
+        ))}
+      </div>
+
+      <div className="pcheck-footer">
+        <button type="button" className="wordintro-prev" aria-label="이전"
+          onClick={() => (si > 0 ? setSi(si - 1) : onExit())}><ArrowLeft size={20} /></button>
+        <button type="button" className="primary-button" disabled={!allCorrect} onClick={next}>
+          {isLast ? "실전 확인 완료" : "다음"}<ArrowRight />
+        </button>
+      </div>
     </div>
   );
 }

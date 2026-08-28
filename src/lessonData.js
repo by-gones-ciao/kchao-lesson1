@@ -17,7 +17,7 @@ export const SESSIONS = [
 ];
 
 export const STAGE_ORDER = [
-  "mission", "wordintro", "recall", "context", "vocab", "grammar", "retry", "report",
+  "mission", "wordintro", "recall", "context", "vocab", "grammar", "practice", "retry", "report",
 ];
 
 export const SKILLS = ["어휘", "문법", "듣기", "읽기", "말하기", "쓰기"];
@@ -229,6 +229,42 @@ export const SESSION1 = {
         ],
       ],
     },
+  },
+  // 실전 확인 — learner-paced dialogue completion. Each screen is a 4-line
+  // two-person exchange; every blank offers two chips and the learner taps the
+  // right one. Strings are literal text; an object { b:[...], a:"..." } is a
+  // blank with its choices and answer.
+  practiceCheck: {
+    title: {
+      ko: "알맞은 답을 골라 대화를 완성하세요.",
+      vi: "Hãy điền từ thích hợp vào chỗ trống để hoàn thành đoạn hội thoại.",
+    },
+    screens: [
+      {
+        lines: [
+          { speaker: "a", parts: ["안녕하세요? 저는 레오 ", { b: ["예요", "이에요"], a: "예요" }, "."] },
+          { speaker: "a", parts: ["저는 미국 사람 ", { b: ["예요", "이에요"], a: "이에요" }, "."] },
+          { speaker: "b", parts: ["만나서 반가워요. 저는 로빈 ", { b: ["예요", "이에요"], a: "이에요" }, "."] },
+          { speaker: "b", parts: ["저는 캐나다 사람 ", { b: ["예요", "이에요"], a: "이에요" }, "."] },
+        ],
+      },
+      {
+        lines: [
+          { speaker: "a", parts: ["안녕하세요? 저는 유키 ", { b: ["에요", "예요"], a: "예요" }, "."] },
+          { speaker: "a", parts: ["저는 일본 사람 ", { b: ["이에요", "이예요"], a: "이에요" }, "."] },
+          { speaker: "b", parts: ["만나서 반가워요. 저는 왕타오 ", { b: ["에요", "예요"], a: "예요" }, "."] },
+          { speaker: "b", parts: ["저는 ", { b: ["중국이에요", "중국 사람이에요"], a: "중국 사람이에요" }, "."] },
+        ],
+      },
+      {
+        lines: [
+          { speaker: "a", parts: ["안녕하세요? 저는 ", { b: ["하리", "하린"], a: "하린" }, " 이에요."] },
+          { speaker: "a", parts: ["저는 ", { b: ["베트남", "베트남 사람"], a: "베트남 사람" }, " 이에요."] },
+          { speaker: "b", parts: ["만나서 반가워요. 저는 ", { b: ["수지", "수진"], a: "수지" }, " 예요."] },
+          { speaker: "b", parts: ["저는 ", { b: ["한국", "한국 사람"], a: "한국 사람" }, " 이에요."] },
+        ],
+      },
+    ],
   },
   listening: {
     prompt: "두 사람은 무엇을 말했어요?",
