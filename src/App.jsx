@@ -786,6 +786,15 @@ function WordIntroStage({ onComplete, onExit }) {
 // correct one (wrong picks stay tappable so they can retry). 다음 unlocks
 // once every blank on the screen is right.
 // ---------------------------------------------------------------------
+function PersonGlyph() {
+  return (
+    <svg width={15} height={15} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8Z" />
+    </svg>
+  );
+}
+
 function PracticeCheckStage({ onComplete, onExit }) {
   const data = SESSION1.practiceCheck;
   const total = data.screens.length;
@@ -815,28 +824,35 @@ function PracticeCheckStage({ onComplete, onExit }) {
         <em>{data.title.vi}</em>
       </h2>
 
-      <div className="pcheck-lines">
-        {screen.lines.map((ln, li) => (
-          <p key={li} className={`pcheck-line ${ln.speaker}`}>
-            {ln.parts.map((pt, pi) => {
-              if (typeof pt === "string") return <span key={pi}>{pt}</span>;
-              const chosen = picks[k(li, pi)];
-              const solved = chosen === pt.a;
-              return (
-                <span key={pi} className="pcheck-blank">
-                  {pt.b.map((opt) => {
-                    let cls = "";
-                    if (chosen === opt) cls = opt === pt.a ? "correct" : "wrong";
-                    return (
-                      <button key={opt} type="button" className={`pcheck-chip ${cls}`} disabled={solved}
-                        onClick={() => setPicks((p) => ({ ...p, [k(li, pi)]: opt }))}>{opt}</button>
-                    );
-                  })}
-                </span>
-              );
-            })}
-          </p>
-        ))}
+      <div className="pcheck-chat">
+        {screen.lines.map((ln, li) => {
+          const prev = screen.lines[li - 1];
+          const turnStart = !prev || prev.speaker !== ln.speaker;
+          return (
+            <div key={li} className={`pcheck-row ${ln.speaker} ${turnStart ? "turn-start" : ""}`}>
+              <span className="pcheck-avatar" aria-hidden="true">{turnStart && <PersonGlyph />}</span>
+              <p className="pcheck-bubble">
+                {ln.parts.map((pt, pi) => {
+                  if (typeof pt === "string") return <span key={pi}>{pt}</span>;
+                  const chosen = picks[k(li, pi)];
+                  const solved = chosen === pt.a;
+                  return (
+                    <span key={pi} className="pcheck-blank">
+                      {pt.b.map((opt) => {
+                        let cls = "";
+                        if (chosen === opt) cls = opt === pt.a ? "correct" : "wrong";
+                        return (
+                          <button key={opt} type="button" className={`pcheck-chip ${cls}`} disabled={solved}
+                            onClick={() => setPicks((p) => ({ ...p, [k(li, pi)]: opt }))}>{opt}</button>
+                        );
+                      })}
+                    </span>
+                  );
+                })}
+              </p>
+            </div>
+          );
+        })}
       </div>
 
       <div className="pcheck-footer">
