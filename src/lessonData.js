@@ -334,6 +334,7 @@ export function defaultSessionState() {
     dobiraSeen: { vocab: false, grammar: false },
     contextFlow: "intro",
     vocabFlow: "wordbook",
+    practiceFlow: "intro",
     pronIndex: null,
     grammar: {
       attempts: 0, passed: false, retry: false, selected: "", view: "teachIntro",

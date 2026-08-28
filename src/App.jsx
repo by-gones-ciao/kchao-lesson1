@@ -497,7 +497,12 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
         <span id="current-stage-label" className="sr-only">{stageLabel}</span>
         {session.stage === "mission" && <MissionStage />}
         {session.stage === "wordintro" && <WordIntroStage onComplete={goNext} onExit={goBack} />}
-        {session.stage === "practice" && <PracticeCheckStage onComplete={goNext} onExit={goBack} />}
+        {session.stage === "practice" && session.practiceFlow !== "quiz" && (
+          <div className="stage-section grammar-stage dobira-stage"><DobiraCard kind="practiceCheck" /></div>
+        )}
+        {session.stage === "practice" && session.practiceFlow === "quiz" && (
+          <PracticeCheckStage onComplete={goNext} onExit={() => patchSession({ practiceFlow: "intro" })} />
+        )}
         {session.stage === "recall" && <RecallStage session={session} patchSession={patchSession} />}
         {session.stage === "context" && <ContextStage session={session} patchSession={patchSession} />}
         {session.stage === "vocab" && <VocabStage patchSession={patchSession} onComplete={goNext} onBack={goBack} />}
@@ -506,10 +511,13 @@ function LearningScreen({ state, setState, session, patchSession, setView }) {
         {session.stage === "report" && <LearningReportStage session={session} state={state} meta={meta} patchSession={patchSession} />}
       </main>
       <footer className="learning-footer">
-        {session.stage === "wordintro" || session.stage === "practice" ? (
-          // 단어 소개 / 실전 확인 are self-contained full-screen overlays — they
-          // own their 다음 / 이전 / ✕ controls, so the page footer stays empty.
+        {session.stage === "wordintro" || (session.stage === "practice" && session.practiceFlow === "quiz") ? (
+          // 단어 소개 / 실전 확인(문제) are self-contained full-screen overlays —
+          // they own their 다음 / 이전 / ✕ controls, so the footer stays empty.
           null
+        ) : session.stage === "practice" && session.practiceFlow !== "quiz" ? (
+          <button type="button" className="primary-button"
+            onClick={() => patchSession({ practiceFlow: "quiz" })}>시작하기<ArrowRight /></button>
         ) : session.stage === "grammar" && session.grammar.view === "teachIntro" ? (
           <button type="button" className="primary-button"
             onClick={() => patchSession((prev) => ({ grammar: { ...prev.grammar, view: "teach" } }))}>시작하기<ArrowRight /></button>
@@ -1207,6 +1215,16 @@ const DOBIRA_COPY = {
     quick: {
       label: { ko: "학습 성과", vi: "Kết quả học tập" },
       desc: { ko: "이름과 국적을 넣어 자기소개 문장을 말할 수 있어요.", vi: "Bạn sẽ nói được câu tự giới thiệu với tên và quốc tịch." },
+    },
+  },
+  practiceCheck: {
+    badge: { ko: "실전 확인", vi: "Kiểm tra tổng hợp" },
+    icon: "check",
+    title: { ko: "오늘 배운 내용을 종합적으로 확인해 봐요", vi: "Cùng kiểm tra tổng hợp những gì đã học hôm nay" },
+    lead: { ko: "대화를 듣고 따라 읽은 후, 직접 쓰고 확인 문제를 풀어 보세요.", vi: "Nghe hội thoại và đọc theo, rồi tự viết và làm bài kiểm tra." },
+    quick: {
+      label: { ko: "학습 성과", vi: "Kết quả học tập" },
+      desc: { ko: "이름과 국적을 말하는 표현을 듣고, 읽고, 말하고, 쓸 수 있어요.", vi: "Bạn có thể nghe, đọc, nói và viết cách diễn đạt tên và quốc tịch." },
     },
   },
   retry: {
