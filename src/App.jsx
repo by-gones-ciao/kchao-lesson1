@@ -935,43 +935,38 @@ function PracRead({ d, lineIndex, onNext }) {
 const isSyl = (ch) => !/[\s.,?!·]/.test(ch);
 const sylsOf = (s) => [...s].filter(isSyl).join("");
 
-// Character-slot input: the target's spaces and punctuation are pre-filled and
-// fixed; the learner types Hangul syllables only and they drop into the blanks
-// left-to-right. `value` holds just the typed syllables.
-function CharSlots({ target, value, disabled, wrong, onChange }) {
-  const inputRef = useRef(null);
-  const targetSylls = sylsOf(target);
-  const typed = [...value].slice(0, targetSylls.length);
-  let k = -1;
+// Word-box input: one box per 띄어쓰기 chunk. Trailing punctuation is shown
+// fixed after its box; the learner types the whole word, and 확인 compares
+// syllables only, so spacing and punctuation never block a correct answer.
+function splitWord(w) {
+  const m = w.match(/^(.*?)([\s.,?!·]*)$/u);
+  return { core: sylsOf(m[1]), punct: m[2] };
+}
+function WordBoxes({ target, values, disabled, wrong, onChange }) {
+  const words = target.split(" ").map(splitWord);
   return (
-    <div className={`prun-slots ${wrong ? "wrong" : ""} ${disabled ? "done" : ""}`}
-      role="textbox" tabIndex={0} onClick={() => inputRef.current?.focus()}>
-      {[...target].map((ch, i) => {
-        if (ch === " ") return <span key={i} className="prun-slot-space" aria-hidden="true" />;
-        if (!isSyl(ch)) return <span key={i} className="prun-slot-fixed">{ch}</span>;
-        k += 1;
-        const kk = k;
-        return (
-          <span key={i} className={`prun-slot ${typed[kk] ? "on" : ""} ${!disabled && kk === typed.length ? "cur" : ""}`}>
-            {typed[kk] || ""}
-          </span>
-        );
-      })}
-      <input ref={inputRef} className="prun-slots-input" value={value} disabled={disabled}
-        autoComplete="off" autoCapitalize="off" spellCheck="false" aria-label="한국어 입력"
-        onChange={(e) => onChange(sylsOf(e.target.value).slice(0, targetSylls.length))} />
+    <div className={`prun-boxes ${wrong ? "wrong" : ""} ${disabled ? "done" : ""}`}>
+      {words.map((w, i) => (
+        <span key={i} className="prun-box-wrap">
+          <input className="prun-box" value={values[i] || ""} disabled={disabled}
+            aria-label={`${i + 1}번째 낱말`} autoComplete="off" autoCapitalize="off" spellCheck="false"
+            onChange={(e) => onChange(i, sylsOf(e.target.value))} />
+          {w.punct && <span className="prun-box-punct">{w.punct}</span>}
+        </span>
+      ))}
     </div>
   );
 }
 
 function PracWrite({ d, itemIndex, onNext }) {
   const line = d.dialogue[d.writeItems[itemIndex]];
-  const [typed, setTyped] = useState("");
+  const cores = line.ko.split(" ").map((w) => splitWord(w).core);
+  const [vals, setVals] = useState(() => cores.map(() => ""));
   const [result, setResult] = useState(null);
   const [hint, setHint] = useState(false);
   const play = () => speakKo(line.ko);
-  useEffect(() => { setTyped(""); setResult(null); setHint(false); play(); }, [itemIndex]); // eslint-disable-line react-hooks/exhaustive-deps
-  const check = () => setResult(typed === sylsOf(line.ko) ? "ok" : "no");
+  useEffect(() => { setVals(cores.map(() => "")); setResult(null); setHint(false); play(); }, [itemIndex]); // eslint-disable-line react-hooks/exhaustive-deps
+  const check = () => setResult(vals.every((v, i) => v === cores[i]) ? "ok" : "no");
   return (
     <div className="prun-body">
       <h2 className="prun-title">대화문을 잘 듣고 써 보세요.<em>Hãy nghe kỹ hội thoại và viết lại.</em></h2>
@@ -982,14 +977,14 @@ function PracWrite({ d, itemIndex, onNext }) {
           <LightbulbIcon size={15} />
         </button>
       </div>
-      <CharSlots target={line.ko} value={typed} disabled={result === "ok"} wrong={result === "no"}
-        onChange={setTyped} />
+      <WordBoxes target={line.ko} values={vals} disabled={result === "ok"} wrong={result === "no"}
+        onChange={(i, v) => setVals((p) => p.map((x, j) => (j === i ? v : x)))} />
       <div className="prun-write-vi"><span>{line.vi}</span></div>
       {hint && <div className="prun-hint-box">힌트: {line.ko}</div>}
       <div className="prun-spacer" />
       {result !== "ok" && (
         <button type="button" className="secondary-button prun-confirm"
-          disabled={typed.length < sylsOf(line.ko).length} onClick={check}>확인</button>
+          disabled={vals.some((v) => !v.trim())} onClick={check}>확인</button>
       )}
       {result && (
         <div className={`prun-toast ${result === "ok" ? "ok" : "no"}`}>
