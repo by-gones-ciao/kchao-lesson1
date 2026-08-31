@@ -984,7 +984,7 @@ function PracWrite({ d, itemIndex, onNext }) {
       <div className="prun-spacer" />
       {result !== "ok" && (
         <button type="button" className="secondary-button prun-confirm"
-          disabled={vals.some((v) => !v.trim())} onClick={check}>확인</button>
+          disabled={result !== null || vals.some((v) => !v.trim())} onClick={check}>확인</button>
       )}
       {result && (
         <div className={`prun-toast ${result === "ok" ? "ok" : "no"}`}>
