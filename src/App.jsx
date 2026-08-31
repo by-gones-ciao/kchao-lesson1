@@ -932,47 +932,72 @@ function PracRead({ d, lineIndex, onNext }) {
   );
 }
 
-const normKo = (s) => s.replace(/[\s.,?!]/g, "");
+const isSyl = (ch) => !/[\s.,?!·]/.test(ch);
+const sylsOf = (s) => [...s].filter(isSyl).join("");
+
+// Character-slot input: the target's spaces and punctuation are pre-filled and
+// fixed; the learner types Hangul syllables only and they drop into the blanks
+// left-to-right. `value` holds just the typed syllables.
+function CharSlots({ target, value, disabled, wrong, onChange }) {
+  const inputRef = useRef(null);
+  const targetSylls = sylsOf(target);
+  const typed = [...value].slice(0, targetSylls.length);
+  let k = -1;
+  return (
+    <div className={`prun-slots ${wrong ? "wrong" : ""} ${disabled ? "done" : ""}`}
+      role="textbox" tabIndex={0} onClick={() => inputRef.current?.focus()}>
+      {[...target].map((ch, i) => {
+        if (ch === " ") return <span key={i} className="prun-slot-space" aria-hidden="true" />;
+        if (!isSyl(ch)) return <span key={i} className="prun-slot-fixed">{ch}</span>;
+        k += 1;
+        const kk = k;
+        return (
+          <span key={i} className={`prun-slot ${typed[kk] ? "on" : ""} ${!disabled && kk === typed.length ? "cur" : ""}`}>
+            {typed[kk] || ""}
+          </span>
+        );
+      })}
+      <input ref={inputRef} className="prun-slots-input" value={value} disabled={disabled}
+        autoComplete="off" autoCapitalize="off" spellCheck="false" aria-label="한국어 입력"
+        onChange={(e) => onChange(sylsOf(e.target.value).slice(0, targetSylls.length))} />
+    </div>
+  );
+}
 
 function PracWrite({ d, itemIndex, onNext }) {
-  const item = d.writeItems[itemIndex];
-  const targets = item.lines.map((li) => d.dialogue[li]);
-  const [typed, setTyped] = useState(() => targets.map(() => ""));
+  const line = d.dialogue[d.writeItems[itemIndex]];
+  const [typed, setTyped] = useState("");
   const [result, setResult] = useState(null);
   const [hint, setHint] = useState(false);
-  const playAll = () => targets.forEach((t, i) => setTimeout(() => speakKo(t.ko), i * 1900));
-  useEffect(() => { setTyped(targets.map(() => "")); setResult(null); setHint(false); playAll(); }, [itemIndex]); // eslint-disable-line react-hooks/exhaustive-deps
-  const check = () => setResult(typed.every((v, i) => normKo(v) === normKo(targets[i].ko)) ? "ok" : "no");
+  const play = () => speakKo(line.ko);
+  useEffect(() => { setTyped(""); setResult(null); setHint(false); play(); }, [itemIndex]); // eslint-disable-line react-hooks/exhaustive-deps
+  const check = () => setResult(typed === sylsOf(line.ko) ? "ok" : "no");
   return (
     <div className="prun-body">
       <h2 className="prun-title">대화문을 잘 듣고 써 보세요.<em>Hãy nghe kỹ hội thoại và viết lại.</em></h2>
       <div className="prun-write-head">
-        <span className="prun-avatar"><img src={d.speakers[item.speaker].img} alt={d.speakers[item.speaker].name} /></span>
-        <button type="button" className="prun-inline-speak" aria-label="다시 듣기" onClick={playAll}><SpeakerIcon size={15} /></button>
+        <span className="prun-avatar"><img src={d.speakers[line.speaker].img} alt={d.speakers[line.speaker].name} /></span>
+        <button type="button" className="prun-inline-speak" aria-label="다시 듣기" onClick={play}><SpeakerIcon size={15} /></button>
         <button type="button" className={`prun-hint-btn ${hint ? "on" : ""}`} aria-label="힌트" onClick={() => setHint((v) => !v)}>
           <LightbulbIcon size={15} />
         </button>
       </div>
-      <div className={`prun-write-card ${result === "no" ? "wrong" : ""}`}>
-        {targets.map((t, i) => (
-          <input key={i} className="prun-write-input" value={typed[i]} disabled={result === "ok"}
-            placeholder="여기에 한국어로 쓰세요" aria-label={`${i + 1}번째 문장`}
-            onChange={(e) => setTyped((p) => p.map((v, j) => (j === i ? e.target.value : v)))} />
-        ))}
-      </div>
-      <div className="prun-write-vi">{targets.map((t) => <span key={t.ko}>{t.vi}</span>)}</div>
-      {hint && <div className="prun-hint-box">힌트: {targets.map((t) => t.ko).join("  ")}</div>}
+      <CharSlots target={line.ko} value={typed} disabled={result === "ok"} wrong={result === "no"}
+        onChange={setTyped} />
+      <div className="prun-write-vi"><span>{line.vi}</span></div>
+      {hint && <div className="prun-hint-box">힌트: {line.ko}</div>}
       <div className="prun-spacer" />
       {result !== "ok" && (
-        <button type="button" className="secondary-button prun-confirm" disabled={typed.some((v) => !v.trim())} onClick={check}>확인</button>
+        <button type="button" className="secondary-button prun-confirm"
+          disabled={typed.length < sylsOf(line.ko).length} onClick={check}>확인</button>
       )}
       {result && (
         <div className={`prun-toast ${result === "ok" ? "ok" : "no"}`}>
           <strong>{result === "ok" ? "정답이에요" : "오답이에요"}</strong>
-          {result === "no" && targets.map((t) => <p key={t.ko}>{t.ko}</p>)}
+          {result === "no" && <p>{line.ko}</p>}
           <div className="prun-toast-actions">
             {result === "no" && (
-              <button type="button" className="secondary-button" onClick={() => { setResult(null); setTyped(targets.map(() => "")); }}>다시하기</button>
+              <button type="button" className="secondary-button" onClick={() => { setResult(null); setTyped(""); }}>다시하기</button>
             )}
             <button type="button" className="primary-button" onClick={onNext}>다음</button>
           </div>

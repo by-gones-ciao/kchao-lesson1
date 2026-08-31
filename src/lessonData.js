@@ -243,9 +243,9 @@ export const SESSION1 = {
     listenVideo: "/media/practice-listen-sample.mp4",
     // the shared dialogue — reused across 듣기 / 읽기 / 쓰기
     dialogue: [
-      { speaker: "a", ko: "안녕하세요? 저는 하영이에요.", vi: "Xin chào. Tôi là Ha-yeong." },
+      { speaker: "a", ko: "안녕하세요? 저는 하영이에요.", vi: "Xin chào. Tôi là 하영." },
       { speaker: "a", ko: "저는 한국 사람이에요.", vi: "Tôi là người Hàn Quốc." },
-      { speaker: "b", ko: "만나서 반가워요. 저는 유키예요.", vi: "Rất vui được gặp bạn. Tôi là Yuki." },
+      { speaker: "b", ko: "만나서 반가워요. 저는 유키예요.", vi: "Rất vui được gặp bạn. Tôi là 유키." },
       { speaker: "b", ko: "저는 일본 사람이에요.", vi: "Tôi là người Nhật Bản." },
     ],
     narrations: {
@@ -261,11 +261,8 @@ export const SESSION1 = {
       write: { ko: "실전 쓰기를 완료했어요!", vi: "Bạn đã hoàn thành phần luyện viết thực tế!" },
       check: { ko: "실전 확인을 완료했어요!", vi: "Bạn đã hoàn thành phần kiểm tra thực hành!" },
     },
-    // 받아쓰기 — one card per speaker turn (its two lines dictated together)
-    writeItems: [
-      { speaker: "a", lines: [0, 1] },
-      { speaker: "b", lines: [2, 3] },
-    ],
+    // 받아쓰기 — one dialogue line per screen (index into `dialogue`)
+    writeItems: [0, 1, 2, 3],
     finish: {
       hi: "수고했어요!",
       title: ["오늘 수업을 모두 완료했어요.", "나의 학습 리포트를 확인해 보세요."],

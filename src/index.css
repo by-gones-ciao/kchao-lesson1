@@ -384,9 +384,17 @@
 .prun-inline-speak,.prun-hint-btn{width:30px;height:30px;display:grid;place-items:center;border:1px solid var(--line);border-radius:50%;background:#fff;color:var(--teal-dark);cursor:pointer}
 .prun-hint-btn{color:#a8790a}
 .prun-hint-btn.on{background:#fff7e6;border-color:#f0d493}
-.prun-write-card{flex:0 0 auto;display:grid;gap:8px;padding:14px;border:1px solid var(--teal);border-radius:14px;background:#f2fffe}
-.prun-write-card.wrong{border-color:#f0a3a3;background:#fff6f6}
-.prun-write-input{width:100%;min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:14px;font-weight:700;color:var(--ink);letter-spacing:.04em}
+.prun-slots{position:relative;flex:0 0 auto;display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 4px;padding:16px 14px;border:1px solid var(--teal);border-radius:14px;background:#f2fffe;cursor:text;line-height:2}
+.prun-slots:focus-within{box-shadow:0 0 0 3px rgb(0 168 166 / 20%)}
+.prun-slots.wrong{border-color:#f0a3a3;background:#fff6f6}
+.prun-slots.done{border-color:var(--teal);background:#eafcf8}
+.prun-slot{min-width:22px;height:30px;display:inline-flex;align-items:flex-end;justify-content:center;padding-bottom:2px;border-bottom:2px solid #9bd8d5;font-size:17px;font-weight:800;color:var(--ink)}
+.prun-slot.on{border-bottom-color:var(--teal-dark)}
+.prun-slot.cur{border-bottom-color:var(--teal-dark);animation:prun-blink 1s step-end infinite}
+@keyframes prun-blink{50%{border-bottom-color:transparent}}
+.prun-slot-fixed{font-size:17px;font-weight:800;color:var(--muted);align-self:flex-end;padding-bottom:2px}
+.prun-slot-space{width:14px}
+.prun-slots-input{position:absolute;left:0;bottom:0;width:1px;height:1px;padding:0;border:0;opacity:0}
 .prun-write-vi{margin-top:8px;display:grid;gap:2px;color:var(--muted);font-size:11px;text-align:center}
 .prun-hint-box{margin-top:8px;padding:9px 11px;border-radius:9px;background:#fff7e6;color:#86620c;font-size:11.5px;font-weight:700;line-height:1.5}
 .prun-confirm{flex:0 0 auto;width:auto;min-width:120px;margin:12px auto 0;padding:0 22px}
