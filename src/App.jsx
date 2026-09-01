@@ -1013,7 +1013,8 @@ function PracQuiz({ d, screenIndex, onNext }) {
   const wrongLines = screen.lines.filter((ln, li) =>
     ln.parts.some((pt, pi) => typeof pt !== "string" && picks[key(li, pi)] !== pt.a));
   const allCorrect = submitted && wrongLines.length === 0;
-  const lineText = (ln) => ln.parts.map((pt) => (typeof pt === "string" ? pt : pt.a)).join("").replace(/\s+/g, " ").trim();
+  const lineText = (ln) => ln.parts.map((pt) => (typeof pt === "string" ? pt : pt.a)).join("")
+    .replace(/\s+/g, " ").replace(/\s+(예요|이에요|이예요|에요)/g, "$1").replace(/\s+([.?!])/g, "$1").trim();
   return (
     <div className="prun-body">
       <div className="stage-kicker">실전 확인 · {screenIndex + 1}/{d.screens.length}</div>
@@ -1042,7 +1043,6 @@ function PracQuiz({ d, screenIndex, onNext }) {
                     </span>
                   );
                 })}
-                {ln.vi && <span className="pcheck-line-vi">{ln.vi}</span>}
               </p>
             </ChatRow>
           );
@@ -1053,7 +1053,9 @@ function PracQuiz({ d, screenIndex, onNext }) {
       ) : (
         <div className={`prun-toast ${allCorrect ? "ok" : "no"}`}>
           <strong>{allCorrect ? "정답이에요" : "틀린 부분을 확인해 보세요"}</strong>
-          {!allCorrect && wrongLines.map((ln, x) => <p key={x}>{lineText(ln)}</p>)}
+          {(allCorrect ? screen.lines : wrongLines).map((ln, x) => (
+            <p key={x}>{lineText(ln)}<span className="prun-toast-vi">{ln.vi}</span></p>
+          ))}
           <div className="prun-toast-actions">
             {!allCorrect && (
               <button type="button" className="secondary-button" onClick={() => { setSubmitted(false); setPicks({}); }}>다시하기</button>
