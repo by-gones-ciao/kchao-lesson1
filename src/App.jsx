@@ -900,6 +900,7 @@ function PracRead({ d, lineIndex, onNext }) {
         <ChatRow side={ln.speaker} speakerMeta={d.speakers[ln.speaker]} turnStart>
           <div className="pcheck-bubble prun-listen-bubble">
             <strong>{ln.ko}</strong>
+            {ln.vi && <span className="prun-vi">{ln.vi}</span>}
             <span className="prun-line-tools">
               <button type="button" aria-label="다시 듣기" onClick={() => speakKo(ln.ko)}><SpeakerIcon size={13} /></button>
             </span>
@@ -989,10 +990,10 @@ function PracWrite({ d, itemIndex, onNext }) {
       {result && (
         <div className={`prun-toast ${result === "ok" ? "ok" : "no"}`}>
           <strong>{result === "ok" ? "정답이에요" : "오답이에요"}</strong>
-          {result === "no" && <p>{line.ko}</p>}
+          <p>{line.ko}<span className="prun-toast-vi">{line.vi}</span></p>
           <div className="prun-toast-actions">
             {result === "no" && (
-              <button type="button" className="secondary-button" onClick={() => { setResult(null); setTyped(""); }}>다시하기</button>
+              <button type="button" className="secondary-button" onClick={() => { setResult(null); setVals(cores.map(() => "")); }}>다시하기</button>
             )}
             <button type="button" className="primary-button" onClick={onNext}>다음</button>
           </div>
