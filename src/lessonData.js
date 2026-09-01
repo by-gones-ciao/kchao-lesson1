@@ -275,26 +275,26 @@ export const SESSION1 = {
     screens: [
       {
         lines: [
-          { speaker: "a", parts: ["안녕하세요? 저는 레오 ", { b: ["예요", "이에요"], a: "예요" }, "."] },
-          { speaker: "a", parts: ["저는 미국 사람 ", { b: ["예요", "이에요"], a: "이에요" }, "."] },
-          { speaker: "b", parts: ["만나서 반가워요. 저는 로빈 ", { b: ["예요", "이에요"], a: "이에요" }, "."] },
-          { speaker: "b", parts: ["저는 캐나다 사람 ", { b: ["예요", "이에요"], a: "이에요" }, "."] },
+          { speaker: "a", parts: ["안녕하세요? 저는 레오 ", { b: ["예요", "이에요"], a: "예요" }, "."], vi: "Xin chào. Tôi là Leo." },
+          { speaker: "a", parts: ["저는 미국 사람 ", { b: ["예요", "이에요"], a: "이에요" }, "."], vi: "Tôi là người Mỹ." },
+          { speaker: "b", parts: ["만나서 반가워요. 저는 로빈 ", { b: ["예요", "이에요"], a: "이에요" }, "."], vi: "Rất vui được gặp bạn. Tôi là Robin." },
+          { speaker: "b", parts: ["저는 캐나다 사람 ", { b: ["예요", "이에요"], a: "이에요" }, "."], vi: "Tôi là người Canada." },
         ],
       },
       {
         lines: [
-          { speaker: "a", parts: ["안녕하세요? 저는 유키 ", { b: ["에요", "예요"], a: "예요" }, "."] },
-          { speaker: "a", parts: ["저는 일본 사람 ", { b: ["이에요", "이예요"], a: "이에요" }, "."] },
-          { speaker: "b", parts: ["만나서 반가워요. 저는 왕타오 ", { b: ["에요", "예요"], a: "예요" }, "."] },
-          { speaker: "b", parts: ["저는 ", { b: ["중국이에요", "중국 사람이에요"], a: "중국 사람이에요" }, "."] },
+          { speaker: "a", parts: ["안녕하세요? 저는 유키 ", { b: ["에요", "예요"], a: "예요" }, "."], vi: "Xin chào. Tôi là Yuki." },
+          { speaker: "a", parts: ["저는 일본 사람 ", { b: ["이에요", "이예요"], a: "이에요" }, "."], vi: "Tôi là người Nhật Bản." },
+          { speaker: "b", parts: ["만나서 반가워요. 저는 왕타오 ", { b: ["에요", "예요"], a: "예요" }, "."], vi: "Rất vui được gặp bạn. Tôi là Vương Thao." },
+          { speaker: "b", parts: ["저는 ", { b: ["중국이에요", "중국 사람이에요"], a: "중국 사람이에요" }, "."], vi: "Tôi là người Trung Quốc." },
         ],
       },
       {
         lines: [
-          { speaker: "a", parts: ["안녕하세요? 저는 ", { b: ["하리", "하린"], a: "하린" }, " 이에요."] },
-          { speaker: "a", parts: ["저는 ", { b: ["베트남", "베트남 사람"], a: "베트남 사람" }, " 이에요."] },
-          { speaker: "b", parts: ["만나서 반가워요. 저는 ", { b: ["수지", "수진"], a: "수지" }, " 예요."] },
-          { speaker: "b", parts: ["저는 ", { b: ["한국", "한국 사람"], a: "한국 사람" }, " 이에요."] },
+          { speaker: "a", parts: ["안녕하세요? 저는 ", { b: ["하리", "하린"], a: "하린" }, " 이에요."], vi: "Xin chào. Tôi là Ha-rin." },
+          { speaker: "a", parts: ["저는 ", { b: ["베트남", "베트남 사람"], a: "베트남 사람" }, " 이에요."], vi: "Tôi là người Việt Nam." },
+          { speaker: "b", parts: ["만나서 반가워요. 저는 ", { b: ["수지", "수진"], a: "수지" }, " 예요."], vi: "Rất vui được gặp bạn. Tôi là Su-ji." },
+          { speaker: "b", parts: ["저는 ", { b: ["한국", "한국 사람"], a: "한국 사람" }, " 이에요."], vi: "Tôi là người Hàn Quốc." },
         ],
       },
     ],

@@ -1042,6 +1042,7 @@ function PracQuiz({ d, screenIndex, onNext }) {
                     </span>
                   );
                 })}
+                {ln.vi && <span className="pcheck-line-vi">{ln.vi}</span>}
               </p>
             </ChatRow>
           );
